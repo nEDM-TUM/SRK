@@ -13,11 +13,11 @@
 //}
 //typedef boost::multiprecision::float128 SRKSpinFloat;
 
-
 //#include <boost/multiprecision/cpp_dec_float.hpp>
 //typedef boost::multiprecision::cpp_dec_float_50 SRKSpinFloat;
 
 typedef double SRKSpinFloat;
+//typedef boost::multiprecision::float128 SRKSpinFloat;
 
 #include "TVector3.h"
 

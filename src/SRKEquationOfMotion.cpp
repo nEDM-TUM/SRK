@@ -10,7 +10,8 @@ using namespace std;
 SRKEquationOfMotion::SRKEquationOfMotion(SRKGlobalField* inpGlobalField)
 {
 	theGlobalField = inpGlobalField;
-	gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
+	//gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
+	gyromagneticRatio = -5.e7;  //Hg radians/s/T
 }
 
 SRKEquationOfMotion::~SRKEquationOfMotion()

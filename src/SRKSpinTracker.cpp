@@ -95,10 +95,12 @@ void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack,
 		else
 		{
 			val=abs(stateError[6]);
-			val/=(eps_abs+eps_rel*abs(deltaPhi));
-			if(val > 1.) //too much error, slow down and repeat
+//			val/=(eps_abs+eps_rel*abs(deltaPhi));
+			val/=(SRKSpinFloat(eps_rel)*abs(deltaPhi));
+			if(val > SRKSpinFloat(1.)) //too much error, slow down and repeat
 			{
-				SRKSpinFloat a=(SRKSpinFloat(0.9)*SRKSpinFloat(pow(val,SRKSpinFloat(-1.)/(SRKSpinFloat(theStepper.error_order_value) - SRKSpinFloat(1.)))));
+//				SRKSpinFloat a=(SRKSpinFloat(0.9)*SRKSpinFloat(pow(val,SRKSpinFloat(-1.)/(SRKSpinFloat(theStepper.error_order_value) - SRKSpinFloat(1.)))));
+				SRKSpinFloat a =SRKSpinFloat(0);
 				SRKSpinFloat b=SRKSpinFloat(0.2);
 				dt=dt*max(a,b);
 				theState=previousState;
@@ -118,7 +120,8 @@ void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack,
 					break;
 				}
 
-				SRKSpinFloat a=SRKSpinFloat(0.9)*SRKSpinFloat(pow(val,SRKSpinFloat(-1.)/SRKSpinFloat(theStepper.order_value )));
+//				SRKSpinFloat a=SRKSpinFloat(0.9)*SRKSpinFloat(pow(val,SRKSpinFloat(-1.)/SRKSpinFloat(theStepper.order_value )));
+				SRKSpinFloat a=SRKSpinFloat(0);
 				SRKSpinFloat b=SRKSpinFloat(5);
 				dt=dt*max(a,b);
 
