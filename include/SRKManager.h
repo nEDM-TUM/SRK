@@ -13,6 +13,7 @@ const TString SRKRESULTSDIR="/home/mjbales/work/code/testproj/output/";
 const TString SRKHISTSDIR="/home/mjbales/work/code/testproj/output/";
 const TString SRKGRAPHSDIR="/home/mjbales/work/code/testproj/output/";
 
+
 class SRKManager
 {
 public:
@@ -24,6 +25,7 @@ public:
 	double trackSpinsDeltaOmega(int numTracks, TString runNameString, double& deltaOmegaError);
 	double trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameString, double& deltaOmegaSteyerlError);
 	TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog=true,int approximateReflectionsFixedTime=0);
+	double trackSpinsFalseEDM(int numTracks, TString runNameString, double& falseEDMError);  //False EDM in e*cm
 
 	inline double getMeanOmega(){return meanOmega;}
 	inline double getErrorOmega(){return errorOmega;}
@@ -54,6 +56,8 @@ public:
 	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
 	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
 	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
+	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
+	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
 	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
 	inline void setInitialStepSize(double inp){theSpinTracker->setInitialStepSize(inp);}
 	inline void setConstStepper(bool inp){theSpinTracker->setConstStepper(inp);}
@@ -67,6 +71,7 @@ protected:
 	void writeEvent();
 	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);
 	void loadFields();
+	double reducePeriodicNumber(double inp, double start, double end);
 
 	TVector3 pos0, pos, vel0,vel; //For recording
 	double phi0,phi,theta0,theta; //For recording
@@ -92,6 +97,8 @@ protected:
 	double e0FieldStrength;
 	double bGradFieldStrength;
 	double dipoleFieldStrength;
+	TVector3 dipolePosition;
+	TVector3 dipoleDirection;
 
 };
 

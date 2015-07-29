@@ -1,5 +1,5 @@
 #include "SRKManager.h"
-
+#include "TMath.h"
 #include <iostream>
 #include <time.h>
 #include <iomanip>
@@ -20,6 +20,8 @@ SRKManager::SRKManager()
 	e0FieldStrength=1e6;
 	bGradFieldStrength=1e-9;
 	dipoleFieldStrength=0;
+	dipolePosition.SetXYZ(0,0,0);
+	dipoleDirection.SetXYZ(1,0,0);
 }
 
 SRKManager::~SRKManager()
@@ -182,14 +184,28 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 	}
 
 	//Calc mean and Error and print
+	//Due to 2Pi repetition, first calc mean, then calc diff, then determine reduced diff phi and give the apparent delta phase
 	errorOmega=0;
 	meanOmega=0;
-	for(unsigned int i=0;i<omegaArray.size();i++)
+	double tempMean=0;
+	for(unsigned int i:omegaArray)
 	{
+		tempMean+=omegaArray[i];
+		//meanOmega+=omegaArray[i];
+	}
+	tempMean/=numTracks;
+	//meanOmega/=numTracks;
+
+	meanOmega=0;
+	for(unsigned int i:omegaArray)
+	{
+		double reduction=reducePeriodicNumber(omegaArray[i], -TMath::Pi()+tempMean, TMath::Pi()+tempMean);
+		omegaArray[i]=reduction;
 		meanOmega+=omegaArray[i];
 	}
 	meanOmega/=numTracks;
-	for(int i=0;i<numTracks;i++)
+
+	for(unsigned int i:omegaArray)
 	{
 		errorOmega += pow(omegaArray[i]-meanOmega,2);
 	}
@@ -216,6 +232,25 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 	cout.unsetf(ios_base::floatfield);
 	theTrack->closeTrackFile();
 	return static_cast<double>(theState[6]); //Phi
+}
+
+double SRKManager::reducePeriodicNumber(double inp, double start, double end)
+{
+	double period = end-start;
+	double answer=inp;
+	double fractPart, intPart;
+
+	fractPart=modf((inp -start)/period,&intPart);
+
+	if(inp > end)
+	{
+		answer=fractPart*period+start;
+	}
+	else if(inp < start)
+	{
+		answer=fractPart*period+end;
+	}
+	return answer;
 }
 
 void SRKManager::setInitialState(SRKMotionState& initialState)
@@ -266,8 +301,8 @@ void SRKManager::loadFields()
 	theGlobalField->setCurrentFieldSettingsToModify(3); //B Dipole
 	theGlobalField->setFieldClass(FIELDCLASS_DIPOLE);
 	theGlobalField->setFieldScalingValue(dipoleFieldStrength);
-	theGlobalField->setFieldMoment(TVector3(0,0,1));
-	theGlobalField->setFieldCenterPos(TVector3(0,0,theTrack->getChamberHeight()*.5));
+	theGlobalField->setFieldMoment(dipoleDirection);
+	theGlobalField->setFieldCenterPos(dipolePosition);
 
 	theGlobalField->updateField();
 
@@ -295,11 +330,23 @@ double SRKManager::trackSpinsDeltaOmega(int numTracks, TString runNameString, do
 
 	deltaOmegaError=sqrt(parError*parError+antiError*antiError);
 	double deltaOmega=parMean-antiMean;
-	cout << "Delta \\omega: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError <<  endl;
+	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError <<  endl;
 	cout.unsetf(ios_base::floatfield);
 	return deltaOmega;
 
 
+
+}
+
+double SRKManager::trackSpinsFalseEDM(int numTracks, TString runNameString, double& falseEDMError)
+{
+	double scaleFactor=100.*6.58211928E-016/(4.*e0FieldStrength);
+	double falseEDM= trackSpinsDeltaOmega( numTracks,  runNameString,  falseEDMError)*scaleFactor;
+	falseEDMError*=scaleFactor;
+
+	cout << "False EDM [e cm]: " << scientific << setprecision(5) << falseEDM << " +/- " << falseEDMError <<  endl;
+	cout.unsetf(ios_base::floatfield);
+	return falseEDM;
 
 }
 
