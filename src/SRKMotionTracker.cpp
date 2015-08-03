@@ -1,4 +1,4 @@
-#include "SRKTrack.h"
+#include "SRKMotionTracker.h"
 
 #include "TROOT.h"
 #include "TMath.h"
@@ -22,37 +22,42 @@ enum CYLSURF
 	CYLSURF_RADIAL, CYLSURF_TOP, CYLSURF_BOTTOM
 };
 
-SRKTrack::SRKTrack()
+SRKMotionTracker::SRKMotionTracker()
 {
 	// TODO Auto-generated constructor stub
 	trackID = 0;
-	trackTree = NULL;
 	trackFile = NULL;
+	trackTree = NULL;
 	reflectionLimit = 1000000;
 	use2D = true;
 	useGravity = false;
 	mass = 3.30e-025; //Hg mass kg
 	meanVel = 193; //in m/s
-	radius = 0.24;
-	height = 0.1;
-	cylinder.SetTubeDimensions(0, radius, height);
+	radius = 0.235;
+	height = 0.12;
+	theShape = new TGeoTube(0, radius, height);
 	timeLimit = 100;
 	diffuseReflectionProb = 100;
 	numTracks = 0;
 	posTree = NULL;
 	velTree = NULL;
-	totalReflections=0;
+	totalReflections = 0;
+	currentTime = 0.;
+	lastTrack = false;
+	currentEntry = 0;
 
 }
 
-SRKTrack::~SRKTrack()
+SRKMotionTracker::~SRKMotionTracker()
 {
+	gROOT->cd();
 	closeTrackFile();
+	delete theShape;
 	delete posTree;
 	delete velTree;
 }
 
-void SRKTrack::closeTrackFile()
+void SRKMotionTracker::closeTrackFile()
 {
 
 	if(trackFile != NULL && trackFile->IsOpen())
@@ -62,53 +67,65 @@ void SRKTrack::closeTrackFile()
 	else
 	{
 		delete trackTree;
+		trackTree = NULL;
 	}
 	delete trackFile;
 	trackFile = NULL;
 	trackTree = NULL;
-
-
 	trackID = 0;
 	numTracks = 0;
-	totalReflections=0;
+	totalReflections = 0;
+	gROOT->cd();
+	currentEntry = 0;
 
 }
 
-void SRKTrack::writeTrackToFile(TString inpTrackFilePath)
+void SRKMotionTracker::openTrackFile(TString inpTrackFilePath)
 {
 	if(trackFile != NULL && trackFile->IsOpen())
 	{
-		trackFile->Close();
+		closeTrackFile();
 	}
 	trackFile = new TFile(inpTrackFilePath, "RECREATE");
+	trackFile->cd();
+	if(trackTree == NULL)
+	{
+		makeTrackTree();
+	}
 
+}
+
+void SRKMotionTracker::makeTrackTree()
+{
+	trackTree = new TTree("trackTree", "Initial points and points of reflection for particle in trap");
+	trackTree->Branch("trackID", &trackID, "trackID/I");
+	trackTree->Branch("lastTrack", &lastTrack, "lastTrack/O");
+	trackTree->Branch("time", &currentTime, "time/D");
+	trackTree->Branch("pos", "TVector3", &pos);
+	trackTree->Branch("vel", "TVector3", &vel);
+}
+
+void SRKMotionTracker::writeTrackToFile()
+{
 	if(trackFile->IsZombie() || !trackFile->IsOpen())
 	{
-		cout << "Error opening track file: " << inpTrackFilePath << endl;
+		cout << "Error track file not open." << endl;
 		return;
 
 	}
 	trackFile->cd();
 
-	//trackFile->WriteTObject(trackTree);
-
 	trackTree->Write("", TObject::kOverwrite);
-
-	trackFile->Close();
-	delete trackFile;
-	trackFile = NULL;
-	trackTree = NULL;
 }
 
-bool SRKTrack::loadTrackFromFile(TString filePath)
+bool SRKMotionTracker::loadTrackFile(TString filePath)
 {
 	closeTrackFile(); //Close if already open
-	trackFile = new TFile(filePath, "READ");
+	trackFile->Open(filePath, "READ");
 	if(trackFile->IsZombie() || !trackFile->IsOpen())
 	{
 		cout << "Error opening track file: " << filePath << endl;
 		return false;
-
 	}
 	trackTree = (TTree*) trackFile->Get("trackTree");
 	trackTree->SetBranchAddress("trackID", &trackID);
@@ -116,61 +133,64 @@ bool SRKTrack::loadTrackFromFile(TString filePath)
 	trackTree->SetBranchAddress("time", &currentTime);
 	trackTree->SetBranchAddress("pos", &posTree);
 	trackTree->SetBranchAddress("vel", &velTree);
+	currentEntry = 0;
 	return true;
 
 }
 
-void SRKTrack::getTrackTreeEntry(int entry, TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut)
+void SRKMotionTracker::getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut)
 {
-	trackTree->GetEntry(entry);
+	trackTree->GetEntry(currentEntry);
 
-	if(posTree == NULL)
-		posOut = pos;
-	else
-		posOut = *posTree;
+	posOut = *posTree;
 
-	if(velTree == NULL)
-		velOut = vel;
-	else
-		velOut = *velTree;
+	velOut = *velTree;
 
 	currentTimeOut = currentTime;
 	trackIDOut = trackID;
 	lastTrackOut = lastTrack;
+	currentEntry++;
 }
 
-void SRKTrack::makeTracksCylinder(int numTracksToAdd, TString inpTrackFilePath)
+void SRKMotionTracker::makeTracks(int numTracksToAdd, TString inpTrackFilePath)
 {
-
-	makeTracksCylinder(numTracksToAdd);
-	writeTrackToFile(inpTrackFilePath);
-
-}
-
-void SRKTrack::makeTracksCylinder(int numTracksToAdd)
-{
-	if(trackTree == NULL)
+	bool useDynamic = false; // For testing whether it's better to keep the tree in memory or let ROOT buffer as it goes
+	if(useDynamic)
 	{
-		trackTree = new TTree("trackTree", "Initial points and points of reflection for particle in trap");
-		trackTree->Branch("trackID", &trackID, "trackID/I");
-		trackTree->Branch("lastTrack", &lastTrack, "lastTrack/O");
-		trackTree->Branch("time", &currentTime, "time/D");
-		trackTree->Branch("pos", "TVector3", &pos);
-		trackTree->Branch("vel", "TVector3", &vel);
+		if(trackTree == NULL)
+		{
+			makeTrackTree();
+		}
 	}
+	else
+	{
+		openTrackFile(inpTrackFilePath);
+	}
+	makeTracks(numTracksToAdd);
+
+	if(useDynamic)
+	{
+		openTrackFile(inpTrackFilePath);
+	}
+
+	writeTrackToFile();
+	closeTrackFile();
+}
+
+void SRKMotionTracker::makeTracks(int numTracksToAdd)
+{
 
 	for (int i = 0; i < numTracksToAdd; i++)
 	{
 
-		makeTrackCylinder(i);
+		makeTrack(i);
 		numTracks++;
-		if(i + 1 % 1000 == 0 || i +1 == numTracksToAdd)
-			cout << i+1 << " tracks made." << endl;
+		if((i + 1) % 1000 == 0 || i + 1 == numTracksToAdd) cout << i + 1 << " tracks made." << endl;
 	}
-	cout << "Average Reflections: " << (double) totalReflections/ (double) numTracksToAdd << endl;
+	cout << "Average Reflections: " << (double) totalReflections / (double) numTracksToAdd << endl;
 }
 
-void SRKTrack::getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut)
+void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut)
 {
 	//Begin with random points
 	posOut = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
@@ -184,80 +204,87 @@ void SRKTrack::getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& 
 	if(use2D)
 	{
 		velOut.SetZ(0.);
-		velOut.SetMag(1);
+		//velOut.SetMag(1);
 		posOut.SetZ(0.);
 	}
-	velOut *= meanVel;
+	velOut.SetMag(meanVel);
 }
 
-void SRKTrack::makeTrackCylinder(int inpTrackID)
+void SRKMotionTracker::makeTrack(int inpTrackID)
 {
 
 	trackID = inpTrackID;
-	lastTrack = false;
+
 	currentTime = 0;
 
 	getRandomDirectionAndPointInCylinder(pos, vel);
 
-	TVector3 posOut, velOut;
-	bool timeLimitReached = false;
-
 	trackTree->Fill(); //Record initial point
 
 #ifdef SRKTRACKDEBUG
+	//Initial pos/vel
 	cout << "Pos: "; pos.Print();
 	cout << "Vel: "; vel.Print();
 #endif
 
-	for (int i = 0; i < reflectionLimit && !timeLimitReached; i++)
+	lastTrack = false;
+	for (currentEntry = 0; currentEntry < reflectionLimit && !lastTrack; currentEntry++)
 	{
-		double timeStep = getReflectionCylinder(pos, vel, posOut, velOut);
 
-		//If time limit happens earlier than when the next reflection has, stop it
-		if(currentTime + timeStep >= timeLimit)
-		{
-			velOut = vel;
-			posOut = pos + vel * (timeLimit - currentTime);
-			currentTime = timeLimit;
-			timeLimitReached = true;
-			lastTrack = true;
-
-		}
-		else
-		{
-			currentTime += timeStep;
-		}
-
-		pos = posOut;
-		vel = velOut;
-
-#ifdef SRKTRACKDEBUG
-		cout << "Pos: "; pos.Print();
-		cout << "Vel: "; vel.Print();
-#endif
-
-		if(i == reflectionLimit - 1)
-		{
-			lastTrack = true;
-		}
-
+		getNextTrackingPoint(pos, vel, currentTime);
 		trackTree->Fill();
-		totalReflections++;
 	}
 
 	return;
 }
 
-double SRKTrack::getReflectionCylinder(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut)
+bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn)
+{
+	TVector3 posRef, velRef;
+	double timeStep = getNextReflection(posIn, velIn, posRef, velRef);
+	lastTrack = false;
+
+	//If time limit happens earlier than when the next reflection has, stop it
+	if(timeIn + timeStep >= timeLimit)
+	{
+
+		posIn += velIn * (timeLimit - timeIn);
+		timeIn = timeLimit;
+		lastTrack = true;
+		totalReflections = 0;
+	}
+	else
+	{
+		timeIn += timeStep;
+		posIn = posRef;
+		velIn = velRef;
+		lastTrack = false;
+		totalReflections++;
+
+		if(totalReflections >= reflectionLimit)
+		{
+			lastTrack = true;
+			totalReflections = 0;
+		}
+	}
+
+#ifdef SRKTRACKDEBUG
+	cout << "Pos: "; posIn.Print();
+	cout << "Vel: "; velIn.Print();
+	cout << "Time: " << timeIn << endl;
+#endif
+
+	return lastTrack;
+}
+
+double SRKMotionTracker::getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut)
 {
 
-	double point[3] =
-	{ pos0.X(), pos0.Y(), pos0.Z() };
+	double point[3] = { pos0.X(), pos0.Y(), pos0.Z() };
 	TVector3 directionVec = vel0;
 	directionVec.SetMag(1);
-	double direction[3] =
-	{ directionVec.X(), directionVec.Y(), directionVec.Z() };
-	double distance = cylinder.DistFromInside(point, direction);
+	double direction[3] = { directionVec.X(), directionVec.Y(), directionVec.Z() };
+	double distance = theShape->DistFromInside(point, direction);
 
 	TVector3 step = vel0;
 	step.SetMag(distance);
@@ -270,16 +297,17 @@ double SRKTrack::getReflectionCylinder(TVector3 pos0, TVector3 vel0, TVector3& p
 	point[0] = posOut.X();
 	point[1] = posOut.Y();
 	point[2] = posOut.Z();
-	cylinder.ComputeNormal(point, direction, normArray);
+	theShape->ComputeNormal(point, direction, normArray);
 	TVector3 norm(-normArray[0], -normArray[1], -normArray[2]);
 
 	velOut = getReflectedVector(diffuseReflectionProb, vel0, norm);
+	velOut.SetMag(vel0.Mag());
 	return minTime;
 
 }
 
 //Returns time to point
-double SRKTrack::getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius)
+double SRKMotionTracker::getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius)
 {
 
 	TVector2 posTrans = pos0.Rotate(-vel0.Phi());
@@ -292,7 +320,7 @@ double SRKTrack::getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, doubl
 	return time;
 }
 
-TVector3 SRKTrack::getRandomDirection()
+TVector3 SRKMotionTracker::getRandomDirection()
 {
 
 	double phi = gRandom->Rndm() * 2. * TMath::Pi();
@@ -301,7 +329,7 @@ TVector3 SRKTrack::getRandomDirection()
 	return TVector3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 }
 
-TVector3 SRKTrack::getRandomPointInCylinder()
+TVector3 SRKMotionTracker::getRandomPointInCylinder()
 {
 	double r = sqrt(gRandom->Rndm()) * radius;
 	double theta = gRandom->Rndm() * 2. * TMath::Pi();
@@ -309,7 +337,7 @@ TVector3 SRKTrack::getRandomPointInCylinder()
 	return TVector3(r * cos(theta), r * sin(theta), z);
 }
 
-TVector3 SRKTrack::getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal)
+TVector3 SRKMotionTracker::getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal)
 {
 	if(DiffCoefficient > 0 && gRandom->Rndm() < DiffCoefficient)
 	{
@@ -318,7 +346,7 @@ TVector3 SRKTrack::getReflectedVector(const double DiffCoefficient, const TVecto
 		if(use2D) //Approximate 2D diffuse scattering by just setting z direction to zero
 		{
 			outVec.SetZ(0.);
-			outVec.SetMag(currentDirection.Mag());
+			outVec.SetMag(1);
 		}
 		return outVec;
 	}
@@ -330,7 +358,7 @@ TVector3 SRKTrack::getReflectedVector(const double DiffCoefficient, const TVecto
 
 }
 
-TVector3 SRKTrack::getDiffuseReflectedVector(const TVector3 normal)
+TVector3 SRKMotionTracker::getDiffuseReflectedVector(const TVector3 normal)
 {
 	double theta = asin(sqrt(gRandom->Rndm()));
 	double phi = gRandom->Rndm() * 2 * TMath::Pi() - TMath::Pi();
@@ -341,7 +369,7 @@ TVector3 SRKTrack::getDiffuseReflectedVector(const TVector3 normal)
 	return newDirection;
 }
 
-void SRKTrack::drawTrack(int trackIDToDraw)
+void SRKMotionTracker::drawTrack(int trackIDToDraw)
 {
 	//First need to convert track to array
 	TVector3* pos;
@@ -355,7 +383,7 @@ void SRKTrack::drawTrack(int trackIDToDraw)
 	vector<double> yVector;
 	vector<double> zVector;
 
-	bool found=false;
+	bool found = false;
 	for (int i = 0; i < numEntries; i++)
 	{
 		trackTree->GetEntry(i);
@@ -364,7 +392,7 @@ void SRKTrack::drawTrack(int trackIDToDraw)
 			xVector.push_back(pos->X());
 			yVector.push_back(pos->Y());
 			zVector.push_back(pos->Z());
-			found=true;
+			found = true;
 		}
 		else
 		{
@@ -382,9 +410,8 @@ void SRKTrack::drawTrack(int trackIDToDraw)
 	TView3D* view = (TView3D*) TView::CreateView(1);
 
 	view->SetRange(-radius, -radius, -0.5 * height, radius, radius, 0.5 * height);
-	TGeoTube* cylinder = new TGeoTube(0., radius, 0.5 * height);
 
 	pl1->SetLineColor(kBlue);
 	pl1->Draw();
-	cylinder->Draw("same");
+	theShape->Draw("same");
 }

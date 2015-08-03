@@ -3,7 +3,6 @@
 
 #include <vector>
 
-
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #include <boost/multiprecision/float128.hpp>
@@ -23,7 +22,7 @@ typedef double SRKSpinFloat;
 
 #include "SRKGlobalField.h"
 
-typedef std::vector< SRKSpinFloat > SRKMotionState;  //Presumes 9 entries: X,Y,Z,Vx,Vy,Vz,spin_phi,spin_theta,time   time not used for runge kutta but for recording state
+typedef std::vector<SRKSpinFloat> SRKMotionState;  //Presumes 9 entries: X,Y,Z,Vx,Vy,Vz,spin_phi,spin_theta,time   time not used for runge kutta but for recording state
 //typedef std::vector<SRKSpinFloat> SRKInternalMotionState;  //Uses higher floating point numbers.  Presumes 9 entries: X,Y,Z,Vx,Vy,Vz,spin_phi,spin_theta,time   time not used for runge kutta but for recording state
 
 class SRKEquationOfMotion
@@ -34,14 +33,8 @@ public:
 	void operator()(const SRKMotionState& x, SRKMotionState& dxdt, const SRKSpinFloat /* t */); //THE equation of motion for use with BOOST odeint
 	void loadFields(bool EBParallel);
 
-	inline void setGyromagneticRatio(double inp)
-	{
-		gyromagneticRatio = SRKSpinFloat(inp);
-	}
-	inline double getGyromagneticRatio()
-	{
-		return static_cast<double> (gyromagneticRatio);
-	}
+	inline void setGyromagneticRatio(double inp){ gyromagneticRatio = SRKSpinFloat(inp); }
+	inline double getGyromagneticRatio(){ return static_cast<double> (gyromagneticRatio); }
 
 protected:
 	SRKGlobalField* theGlobalField;
@@ -52,8 +45,6 @@ protected:
 
 	SRKSpinFloat gyromagneticRatio;
 	SRKSpinFloat theField[9];
-
-
 
 };
 

@@ -55,7 +55,7 @@ SRKField::SRKField(FieldSettings inpFS)
 	if(fs.fieldClass == FIELDCLASS_DIPOLE)
 	{
 		//scalingFactorWUnits *= 1. / (4 * TMath::Pi());
-		scalingFactorWUnits*=1.; //Believe this is how Pignol and Roccia define it.
+		scalingFactorWUnits *= 1.; //Believe this is how Pignol and Roccia define it.
 	}
 	else if(fs.fieldClass == FIELDCLASS_GRADIENT)
 	{
@@ -85,7 +85,7 @@ SRKField::SRKField(FieldSettings inpFS)
 		cout << "Field type not recognized!" << endl;
 	}
 	cout.unsetf(ios_base::floatfield); //Default "adaptive" floating point (cleaner in C++11....)
-	cout << "Loading " << fs.getFieldTypeString() << " " << fs.getFieldClassString() << "Field with scaling value of: "  << fs.scalingValue << endl;
+	cout << "Loading " << fs.getFieldTypeString() << " " << fs.getFieldClassString() << "Field with scaling value of: " << fs.scalingValue << endl;
 
 }
 

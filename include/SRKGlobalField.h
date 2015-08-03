@@ -1,17 +1,6 @@
 #ifndef SRKGlobalField_HH
 #define SRKGlobalField_HH 1
 
-
-#include "SRKField.h"
-#include "SRKInterpolatedField.h"
-#include "SRKDipoleField.h"
-#include "SRKUniformField.h"
-#include "SRKGradientField.h"
-
-
-#include <vector>
-#include <string>
-
 //  SRKGlobalField - handles the global ElectroMagnetic and Gravity field
 //
 //  There is a single SRKGlobalField object.
@@ -22,7 +11,15 @@
 //  represents an element with an EMG field must add the appropriate
 //  SRKField to the global GlobalField object.
 
-typedef std::vector<SRKField*> FieldList;
+#include "SRKField.h"
+#include "SRKInterpolatedField.h"
+#include "SRKDipoleField.h"
+#include "SRKUniformField.h"
+#include "SRKGradientField.h"
+
+#include <vector>
+#include <string>
+
 const int MAX_SRK_NUM_FIELDS = 1000;
 
 class SRKGlobalField: public SRKField
@@ -48,7 +45,7 @@ public:
 	///  to the global field.
 	void addField(SRKField* f)
 	{
-		if(theFieldList) theFieldList->push_back(f);
+		theFieldList.push_back(f);
 	}
 
 	/// clear() removes all SRKField-s from the global object,
@@ -62,8 +59,8 @@ public:
 	///Creates/loads/adds all fields from fieldSettingsToLoad vector
 	void constructFields();
 
-   //Field commands for messenger
-    void setCurrentFieldSettingsToModify(int inp);
+	void setCurrentFieldSettingsToModify(int inp);
+
     inline void setFieldPath(std::string inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].fieldFilePath=inp;}
     inline void setFieldHistName(std::string inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].histName=inp;}
     inline void setFieldExtents(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].extents=inp;}
@@ -86,23 +83,19 @@ public:
     inline void setFieldOffset(TVector3 inp){if(currentFieldSettingsToModify >= 0) {fieldSettingsToLoad[currentFieldSettingsToModify].offset=inp;fieldSettingsToLoad[currentFieldSettingsToModify].centerPos+=inp;}}
 
 
-    inline FieldList* getFields(){return theFieldList;}
-
-
 protected:
 
+	static SRKGlobalField* object;
 
-  static SRKGlobalField* object;
+	int numFields;
+	bool first;
 
-  int numFields;
-  bool first;
+	std::vector<SRKField*> theFieldList;
 
-  FieldList* theFieldList;
+	SRKField** theFieldArray;
 
-  SRKField** theFieldArray;
-
-  std::vector<FieldSettings> fieldSettingsToLoad; //Settings to load magnetic or electric fields (only created during initialization);
-  int currentFieldSettingsToModify;  //Current fieldSettingsToLoad to modify with macro commands...stupid macro command limitations
+	std::vector<FieldSettings> fieldSettingsToLoad; //Settings to load magnetic or electric fields (only created during initialization);
+	int currentFieldSettingsToModify;  //Current fieldSettingsToLoad to modify with macro commands...stupid macro command limitations
 
 };
 

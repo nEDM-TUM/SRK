@@ -5,7 +5,7 @@
 
 #include "SRKField.h"
 
-class SRKUniformField : public SRKField
+class SRKUniformField: public SRKField
 {
 public:
 	SRKUniformField(FieldSettings inpFS);

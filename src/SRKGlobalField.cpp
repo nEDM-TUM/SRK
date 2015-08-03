@@ -36,11 +36,12 @@ using namespace std;
 SRKGlobalField::SRKGlobalField() :
 	SRKField()
 {
-	theFieldList = new FieldList();
-
 	fs.fieldType = FIELD_MAGNETIC; //Highest field type used;
 
 	currentFieldSettingsToModify = -1;
+	first = true;
+	numFields=0;
+	theFieldArray=NULL;
 }
 
 SRKGlobalField::~SRKGlobalField()
@@ -61,7 +62,6 @@ void SRKGlobalField::updateField()
 	constructFields();
 
 }
-
 
 void SRKGlobalField::addFieldValue(const double* point, double* outField) const
 {
@@ -84,16 +84,8 @@ void SRKGlobalField::addFieldValue(const double* point, double* outField) const
 //clears the field list NOT the fieldSettingsToLoad
 void SRKGlobalField::clear()
 {
-	if(theFieldList)
-	{
-		if(theFieldList->size() > 0)
-		{
-			FieldList::iterator i;
-			for (i = theFieldList->begin(); i != theFieldList->end(); ++i)
-				delete* i;
-			theFieldList->clear();
-		}
-	}
+
+	theFieldList.clear();
 
 	if(theFieldArray) delete[] theFieldArray;
 
@@ -106,10 +98,10 @@ void SRKGlobalField::clear()
 void SRKGlobalField::setupArray()
 {
 	first = false;
-	numFields = theFieldList->size();
+	numFields = theFieldList.size();
 	theFieldArray = new SRKField*[numFields + 1]; // add 1 so it's never 0
 	for (int i = 0; i < numFields; ++i)
-		theFieldArray[i] = (*theFieldList)[i];
+		theFieldArray[i] = theFieldList[i];
 }
 
 void SRKGlobalField::setCurrentFieldSettingsToModify(int inp)

@@ -8,12 +8,13 @@
 #include "TF1.h"
 
 #include "SRKManager.h"
-#include "SRKTrack.h"
+#include "SRKMotionTracker.h"
 #include "SRKGraphics.h"
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
 	delete gRandom;
 	gRandom=new TRandom3(0);
 
@@ -21,13 +22,13 @@ int main(int argc, char* argv[]) {
 //	delete gRandom;
 //	gRandom=new TRandom3(0);
 //
-//	SRKTrack theTrack;
-//	theTrack.setReflectionLimit(1000);
-//	//theTrack.setTimeLimit(10);
-//	theTrack.setMeanVel(193);
-//	theTrack.setDiffuseReflectionProb(1);
-//	theTrack.makeTracksCylinder(1000);
-//	theTrack.writeTrackToFile("/home/mjbales/work/code/testproj/output/trackTest.root");
+//	SRKMotionTracker theMotionTracker;
+//	theMotionTracker.setReflectionLimit(1000);
+//	//theMotionTracker.setTimeLimit(10);
+//	theMotionTracker.setMeanVel(193);
+//	theMotionTracker.setDiffuseReflectionProb(1);
+//	theMotionTracker.makeTracks(1000);
+//	theMotionTracker.writeTrackToFile("/home/mjbales/work/code/testproj/output/trackTest.root");
 //
 //	SRKManager theManager;
 //	//theManager.setRecordAllSteps(true);
@@ -95,20 +96,44 @@ int main(int argc, char* argv[]) {
 //	theCanvas.SaveAs(SRKGRAPHSDIR+"DiffuseTest4.png");
 
 /* Test dipole ILL setup*/
+	TString runName="Dipole_1en11_30cm_Dynamic_1s_193m_s_E1e8";
+
 	SRKManager theManager;
+	theManager.setConstStepper(false);
+	//theManager.setPerStepError(1e-8,1e-8);
 	theManager.setUse2D(false);
 	theManager.setChamberHeight(.12);
 	theManager.setChamberRadius(0.235);
 	theManager.setDiffuseReflectionProb(1);
-	theManager.setDipolePosition(TVector3(0,0,0.5+0.5*0.12));//5 cm above the top
-	theManager.setE0FieldStrength(1.e7);
-	theManager.setTimeLimit(100.);
-	theManager.setMeanVel(193.);
-	theManager.setDipoleFieldStrength(0.5e-13);
+	theManager.setDipolePosition(TVector3(0,0,-0.3-0.5*0.12));//30 cm below bottom of chamber
+//	theManager.setDipolePosition(TVector3(0,0,0.5*0.12));//Chamber top
+	theManager.setE0FieldStrength(1.e8);
+	//theManager.setE0FieldStrength(0);
+	theManager.setTimeLimit(1);
+	theManager.setMeanVel(193);
+	theManager.setDipoleFieldStrength(1e-11);
 	theManager.setBGradFieldStrength(0);
 	double falseEDMError;
-	double falseEDM=theManager.trackSpinsFalseEDM(100, "DipoleTest"+TString(argv[1]), falseEDMError);
+	double falseEDM=theManager.trackSpinsFalseEDM(2300000,runName, falseEDMError);
 
+	TString resultPath=SRKHISTSDIR+runName+".txt";
+	ofstream resultFile(resultPath.Data());
+	resultFile << scientific << setprecision(5) << falseEDM << "\t" << falseEDMError <<  endl;
+	resultFile.close();
+
+	/*Solve memory issue*/
+//	SRKMotionTracker theMotionTracker;
+//	theMotionTracker.setTimeLimit(1);
+//	theMotionTracker.setUse2D(false);
+//	cout << "2D" << endl;
+//	theMotionTracker.makeTracks(10,SRKTRACKSDIR+"test.root");
+
+	/* Remake plots for Steyerl Omega */
+
+//	SRKManager theManager;
+//	theManager.setDiffuseReflectionProb(1);
+//	theManager.setTimeLimit(100);
+//	theManager.trackSpinsDeltaOmegaSteyerlPlot(1000, "DiffuseConstantTime", 100,  0.1,1.3475,true,-1);
 
 	return 0;
 }

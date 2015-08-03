@@ -15,8 +15,7 @@ public:
 	SRKInterpolatedField(FieldSettings fs);
 	virtual ~SRKInterpolatedField();
 
-	void addFieldValue(const double Point[4],
-            double* Bfield ) const;
+	void addFieldValue(const double Point[4], double* Bfield) const;
 private:
 	SRKROOTField* theROOTField;
 	TVector3 offset;

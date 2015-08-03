@@ -1,5 +1,6 @@
 #include "SRKManager.h"
 #include "TMath.h"
+#include "TCanvas.h"
 #include <iostream>
 #include <time.h>
 #include <iomanip>
@@ -8,20 +9,22 @@ using namespace std;
 
 SRKManager::SRKManager()
 {
-	resultsFile=NULL;
-	hitTree=NULL;
-	recordAllSteps=false;
-	useAltStepping=false;
-	parallelFields=true;
-	theGlobalField=new SRKGlobalField();
-	theSpinTracker=new SRKSpinTracker(theGlobalField);
-	theTrack=new SRKTrack();
-	b0FieldStrength=1e-6;
-	e0FieldStrength=1e6;
-	bGradFieldStrength=1e-9;
-	dipoleFieldStrength=0;
-	dipolePosition.SetXYZ(0,0,0);
-	dipoleDirection.SetXYZ(1,0,0);
+	resultsFile = NULL;
+	hitTree = NULL;
+	recordAllSteps = false;
+	useAltStepping = false;
+	parallelFields = true;
+	theGlobalField = new SRKGlobalField();
+	theSpinTracker = new SRKSpinTracker(theGlobalField);
+	theMotionTracker = new SRKMotionTracker();
+	b0FieldStrength = 1e-6;
+	e0FieldStrength = 1e6;
+	bGradFieldStrength = 1e-9;
+	dipoleFieldStrength = 0;
+	dipolePosition.SetXYZ(0, 0, 0);
+	dipoleDirection.SetXYZ(0, 0, 1);
+	meanOmega = phi = phi0 = theta = theta0 = time = time0 = errorOmega = 0.;
+	trackID = 0;
 }
 
 SRKManager::~SRKManager()
@@ -29,7 +32,7 @@ SRKManager::~SRKManager()
 
 	delete theGlobalField;
 	delete theSpinTracker;
-	delete theTrack;
+	delete theMotionTracker;
 }
 
 void SRKManager::createResultsFile(TString resultsFilePath)
@@ -48,8 +51,8 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 	}
 	resultsFile->cd();
 
-	hitTree= new TTree("hitTree", "Initial and final states after reflections and spin tracking");
-	hitTree->Branch("trackID",&trackID,"trackID/I");
+	hitTree = new TTree("hitTree", "Initial and final states after reflections and spin tracking");
+	hitTree->Branch("trackID", &trackID, "trackID/I");
 	hitTree->Branch("time0", &time0, "time0/D");
 	hitTree->Branch("pos0", &pos0);
 	hitTree->Branch("vel0", &vel0);
@@ -80,9 +83,9 @@ void SRKManager::writeEvent()
 
 void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
 {
-	for(unsigned int i=0;i<stepRecord->size();i++)
+	for (unsigned int i = 0; i < stepRecord->size(); i++)
 	{
-		(stepRecord->at(i))[8]=stepTimes->at(i); //we record the time in the last slot
+		(stepRecord->at(i))[8] = stepTimes->at(i); //we record the time in the last slot
 		setFinalState(stepRecord->at(i));
 		writeEvent();
 	}
@@ -91,74 +94,84 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 
 double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath)
 {
-	clock_t t1,t2;
-	t1=clock();
+	bool useDynamic = trackFilePath == "";
+
+	clock_t t1, t2;
+	t1 = clock();
 
 	vector<double> omegaArray; // For calculating mean and error
 	omegaArray.reserve(numTracks);
 
-
-	if(trackFilePath != "")
+	if(!useDynamic)
 	{
-		theTrack->loadTrackFromFile(trackFilePath);
+		theMotionTracker->loadTrackFile(trackFilePath);
 	}
-
 
 	TVector3 pos;
 	TVector3 vel;
-	double currentTime;
-	bool lastTrack;
-
+	TVector3 posOut;
+	TVector3 velOut;
+	double currentTime = 0;
+	bool lastTrack = false;
 
 	loadFields();
 
-
 	SRKMotionState theState(9);
 	SRKMotionState initialState(9);
-	std::vector<SRKMotionState>* stepRecord=NULL;//Used for recording all steps
-	std::vector<double>* stepTimes=NULL; //Used for recording all steps
+	std::vector<SRKMotionState>* stepRecord = NULL; //Used for recording all steps
+	std::vector<double>* stepTimes = NULL; //Used for recording all steps
 	if(recordAllSteps)
 	{
-		stepRecord=new std::vector<SRKMotionState>;
-		stepTimes=new std::vector<double>;
+		stepRecord = new std::vector<SRKMotionState>;
+		stepTimes = new std::vector<double>;
 	}
 
-
-	int previousTrackID = -1;
-
 	createResultsFile(resultsFilePath);
-	for (int i = 0; i < theTrack->getTrackTreeEntries(); i++)
+
+	for (int i = 0; i < numTracks; i++)  //Track loop
 	{
-		theTrack->getTrackTreeEntry(i,pos,vel,currentTime,trackID,lastTrack);
-		if(trackID >= numTracks)
+		//Starting point
+		if(useDynamic)
 		{
-			break;
-		}
-		if(previousTrackID != trackID) //New Track
-		{
-			if(trackID%100==0) cout << "Spinning track: " << trackID << endl;
-//			pos.Print();
-//			vel.Print();
-			updateMotionStatePosVel(theState, pos, vel, currentTime);
-			theState[6] = 0; //Phi
-			theState[7] = 0; //Theta
-			setInitialState(theState);
-			previousTrackID = trackID;
+			theMotionTracker->getRandomDirectionAndPointInCylinder(pos, vel);
+//			pos.SetXYZ(0,0,0);
+			trackID = i;
+			lastTrack = false;
+
 		}
 		else
 		{
-			if(useAltStepping)
+			theMotionTracker->getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
+		}
+		updateMotionStatePosVel(theState, pos, vel, currentTime);
+		theState[6] = 0; //Phi
+		theState[7] = 0; //Theta
+		setInitialState(theState);
+
+		if(i % 100 == 0) cout << "Spinning track: " << trackID << endl;
+
+		//Reflection point loop
+		do
+		{
+			if(useDynamic)
 			{
-				theSpinTracker->trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]),stepRecord,stepTimes); //Runge Kutta on Phi and Theta
+				lastTrack = theMotionTracker->getNextTrackingPoint(pos, vel, currentTime);
 			}
 			else
 			{
-				theSpinTracker->trackSpin(theState, currentTime - static_cast<double>(theState[8]),stepRecord,stepTimes); //Runge Kutta on Phi and Theta
+				theMotionTracker->getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
+
 			}
 
+			if(useAltStepping)
+			{
+				theSpinTracker->trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
+			else
+			{
+				theSpinTracker->trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
 			updateMotionStatePosVel(theState, pos, vel, currentTime); //Use the next reflection point for next step
-//			pos.Print();
-//			vel.Print();
 			if(lastTrack) //Record at last point
 			{
 
@@ -166,55 +179,110 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 				{
 					setFinalState(theState);
 					writeEvent(); //Write the final state only
-					double deltaOmega=phi/currentTime;
+					double deltaOmega = phi / currentTime;
 					omegaArray.push_back(deltaOmega);
 
 				}
 				else
 				{
-					writeAllSteps(stepRecord,stepTimes);
+					writeAllSteps(stepRecord, stepTimes);
 				}
-//				cout << "Steps taken: " << theSpinTracker.getStepsTaken() << endl;
-			//	theSpinTracker.resetStepsTaken();
+				currentTime = 0;
 			}
-
-			previousTrackID = trackID;
-		}
-
+		} while (!lastTrack);
 	}
+
+////Old Loop
+//	for (int i = 0; i < theMotionTracker->getTrackTreeEntries(); i++)
+//	{
+//		theMotionTracker->getTrackTreeEntry(i, pos, vel, currentTime, trackID, lastTrack);
+//		if(trackID >= numTracks)
+//		{
+//			break;
+//		}
+//		if(previousTrackID != trackID) //New Track
+//		{
+//			if(trackID % 100 == 0) cout << "Spinning track: " << trackID << endl;
+////			pos.Print();
+////			vel.Print();
+//			updateMotionStatePosVel(theState, pos, vel, currentTime);
+//			theState[6] = 0; //Phi
+//			theState[7] = 0; //Theta
+//			setInitialState(theState);
+//			previousTrackID = trackID;
+//		}
+//		else
+//		{
+//			if(useAltStepping)
+//			{
+//				theSpinTracker->trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta
+//			}
+//			else
+//			{
+//				theSpinTracker->trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta
+//			}
+//
+//			updateMotionStatePosVel(theState, pos, vel, currentTime); //Use the next reflection point for next step
+////			pos.Print();
+////			vel.Print();
+//			if(lastTrack) //Record at last point
+//			{
+//
+//				if(stepRecord == NULL)
+//				{
+//					setFinalState(theState);
+//					writeEvent(); //Write the final state only
+//					double deltaOmega = phi / currentTime;
+//					omegaArray.push_back(deltaOmega);
+//
+//				}
+//				else
+//				{
+//					writeAllSteps(stepRecord, stepTimes);
+//				}
+////				cout << "Steps taken: " << theSpinTracker.getStepsTaken() << endl;
+//				//	theSpinTracker.resetStepsTaken();
+//			}
+//
+//			previousTrackID = trackID;
+//		}
+//
+//	}
 
 	//Calc mean and Error and print
 	//Due to 2Pi repetition, first calc mean, then calc diff, then determine reduced diff phi and give the apparent delta phase
-	errorOmega=0;
-	meanOmega=0;
-	double tempMean=0;
-	for(unsigned int i:omegaArray)
+	errorOmega = 0;
+	meanOmega = 0;
+	double tempMean = 0;
+	for (unsigned int i = 0; i < omegaArray.size(); i++)
 	{
-		tempMean+=omegaArray[i];
-		//meanOmega+=omegaArray[i];
+		tempMean += omegaArray[i];
+		meanOmega += omegaArray[i];
 	}
-	tempMean/=numTracks;
-	//meanOmega/=numTracks;
+	tempMean /= numTracks;
+	meanOmega /= numTracks;
 
-	meanOmega=0;
-	for(unsigned int i:omegaArray)
+	meanOmega = 0;
+	for (unsigned int i = 0; i < omegaArray.size(); i++)
 	{
-		double reduction=reducePeriodicNumber(omegaArray[i], -TMath::Pi()+tempMean, TMath::Pi()+tempMean);
-		omegaArray[i]=reduction;
-		meanOmega+=omegaArray[i];
+		double reduction = reducePeriodicNumber(omegaArray[i], -TMath::Pi() + tempMean, TMath::Pi() + tempMean);
+		omegaArray[i] = reduction;
+		meanOmega += omegaArray[i];
 	}
-	meanOmega/=numTracks;
+	meanOmega /= numTracks;
 
-	for(unsigned int i:omegaArray)
+	for (unsigned int i = 0; i < omegaArray.size(); i++)
 	{
-		errorOmega += pow(omegaArray[i]-meanOmega,2);
+		errorOmega += pow(omegaArray[i] - meanOmega, 2);
 	}
-
-	errorOmega=sqrt(errorOmega);
-	errorOmega /= numTracks-1;
+	errorOmega /= numTracks - 1;
+	errorOmega = sqrt(errorOmega); //STDev at this point
+	errorOmega /= sqrt(numTracks); //Now it's error of the mean
 
 	cout << resultsFilePath << "-- Mean omega: " << setprecision(15) << fixed << meanOmega << " +/- " << scientific << errorOmega << endl;
 	closeResultsFile();
+
+	theMotionTracker->closeTrackFile();
 
 	if(stepRecord != NULL)
 	{
@@ -225,56 +293,57 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 		delete stepTimes;
 	}
 
-	t2=clock();
+	t2 = clock();
 
-	double diff =((double)t2-(double)t1)/ (double)CLOCKS_PER_SEC;
-	cout << "Computation time: " << fixed << setprecision(3) << diff << "   Tracks per Second: " << (double) numTracks / diff   << "   Tracks per hour: " << (float) numTracks*3600 / diff << endl;;
+	double diff = ((double) t2 - (double) t1) / (double) CLOCKS_PER_SEC;
+	cout << "Computation time: " << fixed << setprecision(3) << diff << "   Tracks per Second: " << (double) numTracks / diff << "   Tracks per hour: " << (float) numTracks * 3600 / diff << endl;
+	;
 	cout.unsetf(ios_base::floatfield);
-	theTrack->closeTrackFile();
+
 	return static_cast<double>(theState[6]); //Phi
 }
 
 double SRKManager::reducePeriodicNumber(double inp, double start, double end)
 {
-	double period = end-start;
-	double answer=inp;
+	double period = end - start;
+	double answer = inp;
 	double fractPart, intPart;
 
-	fractPart=modf((inp -start)/period,&intPart);
+	fractPart = modf((inp - start) / period, &intPart);
 
 	if(inp > end)
 	{
-		answer=fractPart*period+start;
+		answer = fractPart * period + start;
 	}
 	else if(inp < start)
 	{
-		answer=fractPart*period+end;
+		answer = fractPart * period + end;
 	}
 	return answer;
 }
 
 void SRKManager::setInitialState(SRKMotionState& initialState)
 {
-//	cout << "-----------Initial------------" << endl;
-//	printMotionState(initialState);
+	//cout << "-----------Initial------------" << endl;
+	//printMotionState(initialState);
 
-	pos0.SetXYZ(static_cast<double>(initialState[0]),static_cast<double>(initialState[1]),static_cast<double>(initialState[2]));
-	vel0.SetXYZ(static_cast<double>(initialState[3]),static_cast<double>(initialState[4]),static_cast<double>(initialState[5]));
-	phi0=static_cast<double>(initialState[6]);
-	theta0=static_cast<double>(initialState[7]);
-	time0=static_cast<double>(initialState[8]);
+	pos0.SetXYZ(static_cast<double>(initialState[0]), static_cast<double>(initialState[1]), static_cast<double>(initialState[2]));
+	vel0.SetXYZ(static_cast<double>(initialState[3]), static_cast<double>(initialState[4]), static_cast<double>(initialState[5]));
+	phi0 = static_cast<double>(initialState[6]);
+	theta0 = static_cast<double>(initialState[7]);
+	time0 = static_cast<double>(initialState[8]);
 }
 
 void SRKManager::setFinalState(SRKMotionState& finalState)
 {
-//	cout << "-----------Final------------" << endl;
-//	printMotionState(finalState);
+	//cout << "-----------Final------------" << endl;
+	//printMotionState(finalState);
 
-	pos.SetXYZ(static_cast<double>(finalState[0]),static_cast<double>(finalState[1]),static_cast<double>(finalState[2]));
-	vel.SetXYZ(static_cast<double>(finalState[3]),static_cast<double>(finalState[4]),static_cast<double>(finalState[5]));
-	phi=static_cast<double>(finalState[6]);
-	theta=static_cast<double>(finalState[7]);
-	time=static_cast<double>(finalState[8]);
+	pos.SetXYZ(static_cast<double>(finalState[0]), static_cast<double>(finalState[1]), static_cast<double>(finalState[2]));
+	vel.SetXYZ(static_cast<double>(finalState[3]), static_cast<double>(finalState[4]), static_cast<double>(finalState[5]));
+	phi = static_cast<double>(finalState[6]);
+	theta = static_cast<double>(finalState[7]);
+	time = static_cast<double>(finalState[8]);
 
 }
 
@@ -282,7 +351,7 @@ void SRKManager::loadFields()
 {
 	theGlobalField->setCurrentFieldSettingsToModify(0); //B0 Field
 	theGlobalField->setFieldScalingValue(b0FieldStrength);
-	theGlobalField->setFieldDirection(TVector3(0,0,1));
+	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
 
 	theGlobalField->setCurrentFieldSettingsToModify(1); //E0 Field
 	theGlobalField->setFieldType(FIELD_ELECTRIC);
@@ -296,7 +365,7 @@ void SRKManager::loadFields()
 	theGlobalField->setCurrentFieldSettingsToModify(2); //B Grad Field
 	theGlobalField->setFieldClass(FIELDCLASS_GRADIENT);
 	theGlobalField->setFieldScalingValue(bGradFieldStrength);
-	theGlobalField->setFieldDirection(TVector3(0,0,1));
+	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
 
 	theGlobalField->setCurrentFieldSettingsToModify(3); //B Dipole
 	theGlobalField->setFieldClass(FIELDCLASS_DIPOLE);
@@ -311,40 +380,32 @@ void SRKManager::loadFields()
 double SRKManager::trackSpinsDeltaOmega(int numTracks, TString runNameString, double& deltaOmegaError)
 {
 	//Run Parallel
-	theTrack->closeTrackFile();
-	theTrack->makeTracksCylinder(numTracks);
 	setParallelFields(true);
-	trackSpins(numTracks, "", SRKRESULTSDIR+runNameString+"P.root");
-	double parMean=getMeanOmega();
-	double parError=getErrorOmega();
-
-
+	trackSpins(numTracks, "", SRKRESULTSDIR + runNameString + "P.root");
+	double parMean = getMeanOmega();
+	double parError = getErrorOmega();
 
 	//Run Anti-Parallel
-	theTrack->closeTrackFile();
-	theTrack->makeTracksCylinder(numTracks);
 	setParallelFields(false);
-	trackSpins(numTracks, "", SRKRESULTSDIR+runNameString+"P.root");
-	double antiMean=getMeanOmega();
-	double antiError=getErrorOmega();
+	trackSpins(numTracks, "", SRKRESULTSDIR + runNameString + "A.root");
+	double antiMean = getMeanOmega();
+	double antiError = getErrorOmega();
 
-	deltaOmegaError=sqrt(parError*parError+antiError*antiError);
-	double deltaOmega=parMean-antiMean;
-	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError <<  endl;
+	deltaOmegaError = sqrt(parError * parError + antiError * antiError);
+	double deltaOmega = parMean - antiMean;
+	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError << endl;
 	cout.unsetf(ios_base::floatfield);
 	return deltaOmega;
-
-
 
 }
 
 double SRKManager::trackSpinsFalseEDM(int numTracks, TString runNameString, double& falseEDMError)
 {
-	double scaleFactor=100.*6.58211928E-016/(4.*e0FieldStrength);
-	double falseEDM= trackSpinsDeltaOmega( numTracks,  runNameString,  falseEDMError)*scaleFactor;
-	falseEDMError*=scaleFactor;
+	double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
+	double falseEDM = trackSpinsDeltaOmega(numTracks, runNameString, falseEDMError) * scaleFactor;
+	falseEDMError *= scaleFactor;
 
-	cout << "False EDM [e cm]: " << scientific << setprecision(5) << falseEDM << " +/- " << falseEDMError <<  endl;
+	cout << "False EDM [e cm]: " << scientific << setprecision(5) << falseEDM << " +/- " << falseEDMError << endl;
 	cout.unsetf(ios_base::floatfield);
 	return falseEDM;
 
@@ -353,7 +414,7 @@ double SRKManager::trackSpinsFalseEDM(int numTracks, TString runNameString, doub
 double SRKManager::trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameString, double& deltaOmegaSteyerlError)
 {
 	double meanDeltaOmegaSteyerl = trackSpinsDeltaOmega(numTracks, runNameString, deltaOmegaSteyerlError);
-	double zetaEtaOmega0 = getZeta() * getEta()*getOmega0();
+	double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
 	deltaOmegaSteyerlError /= zetaEtaOmega0;
 	meanDeltaOmegaSteyerl /= zetaEtaOmega0;
 
@@ -363,13 +424,13 @@ double SRKManager::trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameStr
 
 }
 
-TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd,bool useLog,int approximateReflectionsFixedTime)
+void SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd, bool useLog, int approximateReflectionsFixedTime)
 {
 	vector<double> x(numOmegaSteyerl);
 	vector<double> y(numOmegaSteyerl);
 	vector<double> eY(numOmegaSteyerl);
 
-	double oldTimeLimit=getTimeLimit(); //in case we are using approximateRefelectionsFixedTime
+	double oldTimeLimit = getTimeLimit(); //in case we are using approximateRefelectionsFixedTime
 
 	double increment;
 	if(useLog)
@@ -396,26 +457,32 @@ TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint,
 		setVelByOmegaSteyerl(x[i]);
 		if(approximateReflectionsFixedTime > 0)
 		{
-			double timeLimit=approximateReflectionsFixedTime * .4 / abs(getMeanVel());
-			setTimeLimit( timeLimit);
+			double timeLimit = approximateReflectionsFixedTime * .4 / abs(getMeanVel());
+			setTimeLimit(timeLimit);
 		}
 		cout << " ------------------------------" << endl;
-		cout << "Set#: " << i << "    Omega = " << x[i] << "    Vel = "<< getMeanVel() <<endl;
+		cout << "Set#: " << i << "    Omega = " << x[i] << "    Vel = " << getMeanVel() << endl;
 		cout << " ------------------------------" << endl;
 
 		y[i] = trackSpinsDeltaOmegaSteyerl(numTracksPerPoint, runNameString + "_" + TString(i), eY[i]);
 	}
+
+	TCanvas theCanvas("theCanvas", "theCanvas", 1600, 1200);
+	theCanvas.SetLogx();
 
 	TGraphErrors* outGraph = new TGraphErrors(numOmegaSteyerl, x.data(), y.data(), NULL, eY.data());
 	outGraph->SetName(runNameString + "OmegaGraph");
 	outGraph->SetTitle(runNameString + " Geometric Phase Plot");
 	outGraph->GetYaxis()->SetTitle("#frac{#Delta#omega}{#zeta#eta#omega_{0}}");
 	outGraph->GetXaxis()->SetTitle("#omega_{r} / #omega_{0}");
-	outGraph->GetXaxis()->SetLimits(0.01,100);
-	outGraph->GetXaxis()->SetRangeUser(0.01,100);
+	outGraph->GetXaxis()->SetLimits(0.01, 100);
+	outGraph->GetXaxis()->SetRangeUser(0.01, 100);
 	outGraph->GetXaxis()->SetNoExponent();
 	//outGraph->GetYaxis()->SetLimits(-3.4999,2);
 	//outGraph->GetYaxis()->SetRangeUser(-3.4999,2);
+
+	outGraph->Draw("APE1");
+	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString +".png");
 
 	//Eventually I should figure out where to throw this function...
 	ofstream outFile;
@@ -439,8 +506,5 @@ TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint,
 
 	setTimeLimit(oldTimeLimit);
 
-
-
-	return outGraph;
-
+	delete outGraph;
 }

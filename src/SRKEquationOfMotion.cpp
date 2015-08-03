@@ -92,7 +92,7 @@ void updateMotionStatePosVel(SRKMotionState& outState, TVector3 pos, TVector3 ve
 void printMotionState(const SRKMotionState& theState)
 {
 	cout << "----------------------------" << endl;
-	cout << "Pos: "  << static_cast<double>(theState[0]) << ", " << static_cast<double>(theState[1]) << ", " << static_cast<double>(theState[2]) << endl;
+	cout << "Pos: " << static_cast<double>(theState[0]) << ", " << static_cast<double>(theState[1]) << ", " << static_cast<double>(theState[2]) << endl;
 	cout << "Vel: " << static_cast<double>(theState[3]) << ", " << static_cast<double>(theState[4]) << ", " << static_cast<double>(theState[5]) << endl;
 	cout << "Phi: " << static_cast<double>(theState[6]) << "   Theta: " << static_cast<double>(theState[7]) << "   Time: " << static_cast<double>(theState[8]) << endl;
 	cout << "----------------------------" << endl;

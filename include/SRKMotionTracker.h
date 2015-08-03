@@ -6,28 +6,32 @@
 #include "TString.h"
 #include "TVector3.h"
 #include "TVector2.h"
+#include "TGeoShape.h"
 #include "TGeoTube.h"
 
-class SRKTrack
+class SRKMotionTracker
 {
 public:
-	SRKTrack();
-	virtual ~SRKTrack();
+	SRKMotionTracker();
+	virtual ~SRKMotionTracker();
 
-	double getReflectionCylinder(TVector3 pos0,TVector3 vel0,TVector3& posOut,TVector3& velOut); //Return true if error/limit
-	void makeTracksCylinder(int numTracksToAdd);
-	void makeTracksCylinder(int numTracksToAdd,TString inpTrackFilePath);
+	void makeTracks(int numTracksToAdd, TString inpTrackFilePath);
+	void makeTracks(int numTracksToAdd);
 	void drawTrack(int trackID);
+
+	double getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut); //Return time till next reflection
+	bool getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn);
 
 	TVector3 getRandomDirection();
 	TVector3 getRandomPointInCylinder();
 	void getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut);
 
-	bool loadTrackFromFile(TString filePath); //returns true if succesful
+	bool loadTrackFile(TString filePath); //returns true if successful
+	void openTrackFile(TString inpTrackFilePath);
 	void closeTrackFile();
-	void writeTrackToFile(TString outTrackFilePath);
+	void writeTrackToFile();
 
-	void getTrackTreeEntry(int entry,TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
+	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
 
 	inline double getTimeLimit(){return timeLimit;}
 	inline double getDiffuseReflectionProb(){return diffuseReflectionProb;}
@@ -41,22 +45,23 @@ public:
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
 	inline void setMeanVel(double inp){meanVel=inp;}
 	inline void setReflectionLimit(int inp){reflectionLimit=inp;}
-	inline void setUse2D(bool inp){use2D=inp;};
-	inline void setChamberRadius(double inp){radius=inp;cylinder.SetTubeDimensions(0,radius,height);}
-	inline void setChamberHeight(double inp){height=inp;cylinder.SetTubeDimensions(0,radius,height);}
-
+	inline void setUse2D(bool inp){use2D=inp;}
+	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height);}
+	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height);}
 
 protected:
 
-
-	double getTimeIntersectVecInCircle(TVector2 pos0,TVector2 vel0,double radius);
+	double getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius);
 	TVector3 getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal);
+
 	TVector3 getDiffuseReflectedVector(const TVector3 normal);
 
-	void makeTrackCylinder(int inpTrackID);
+	void makeTrack(int inpTrackID);
 
+	void makeTrackTree();
 
 	TTree* trackTree; //Track tree containing position and reflection information
+	int currentEntry;
 	int numTracks;
 	double timeLimit; //Stop after a time limit
 	int reflectionLimit; //Stop after a numer of reflections
@@ -71,7 +76,7 @@ protected:
 	//Geometry
 	double radius;
 	double height;
-	TGeoTube cylinder;
+	TGeoShape* theShape;
 
 	TFile* trackFile;
 
@@ -86,8 +91,6 @@ protected:
 	//For branch addresses for trees...This is dumb...should probably replace with a state class
 	TVector3* posTree;
 	TVector3* velTree;
-
-
 
 };
 

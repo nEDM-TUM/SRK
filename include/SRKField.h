@@ -5,7 +5,7 @@
 
 #include <string>
 
-const static double inv_c_light=1./2.99792458e+8;
+const static double inv_c_light = 1. / 2.99792458e+8;
 
 enum FieldType{FIELD_MAGNETIC,FIELD_ELECTRIC,FIELD_GRAVITY};
 enum FieldClass{FIELDCLASS_UNIFORM,FIELDCLASS_GRADIENT,FIELDCLASS_DIPOLE,FIELDCLASS_OSCILLATING,FIELDCLASS_INTERPOLATION};
@@ -23,7 +23,7 @@ public:
 		angleX = angleY = angleZ = 0;
 		symmetry[0] = symmetry[1] = symmetry[2] = false;
 		histName = "field";
-		extents = TVector3(100., 100. , 100. );
+		extents = TVector3(100., 100., 100.);
 		fieldFilePath = "";
 		useCubicInterpolation = false;
 		frequency = 0;
@@ -79,24 +79,18 @@ public:
 	//  Destructor.
 	virtual ~SRKField();
 
-	inline double getLength(){ return fs.extents[0];}
-
-
-	inline double getWidth(){ return fs.extents[1];}
-
-	inline double getHeight(){return fs.extents[2];}
-
-	inline bool DoesFieldChangeEnergy() const{ return true;}
-
 	//All UCCNTFields must implement addFieldValue  This is for extra speed
 	virtual void addFieldValue(const double Point[4], double Bfield[]) const=0;
 
+	inline double getLength(){ return fs.extents[0];}
+	inline double getWidth(){ return fs.extents[1];}
+	inline double getHeight(){return fs.extents[2];}
+	inline bool DoesFieldChangeEnergy() const{ return true;}
 	inline void GetFieldValue(const double Point[4], double Bfield[]) const
 	{
 		Bfield[0] = Bfield[1] = Bfield[2] = Bfield[3] = Bfield[4] = Bfield[5] = Bfield[6] = Bfield[7] = Bfield[8] = 0.;
 		addFieldValue(Point, Bfield);
 	}
-
 	inline FieldType getFieldType(){ return fs.fieldType;}
 
 protected:

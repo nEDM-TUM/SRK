@@ -12,13 +12,12 @@
 #include "TH1.h"
 
 void convertTH1ToTXT(TH1* inpHist, TString outputFileName);
-void convertXYDataWErrorToTXT( int numData,double* x,double* y, double* eX,double* eY,TString titleString,TString outputFileName);
-void convertTGraphErrorsToTXT(TGraphErrors* inpGraph,TString outputFileName);
+void convertXYDataWErrorToTXT(int numData, double* x, double* y, double* eX, double* eY, TString titleString, TString outputFileName);
+void convertTGraphErrorsToTXT(TGraphErrors* inpGraph, TString outputFileName);
 bool fileExists(TString strFileName);
 TString fileNameFromFullPath(TString fullPath);
-int countTString(TString inpString,char inpChar);
-int getNonCommentLine(ifstream& inpFileStream, TString& outString,char delim);
-TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim='\n');
-
+int countTString(TString inpString, char inpChar);
+int getNonCommentLine(ifstream& inpFileStream, TString& outString, char delim);
+TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim = '\n');
 
 #endif /* SRKGRAPHICS_H_ */
