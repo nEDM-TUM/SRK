@@ -1,5 +1,10 @@
 #include "SRKGraphics.h"
-
+#include <algorithm>
+#include <iomanip>
+#include "TFile.h"
+#include "TTree.h"
+#include "TStyle.h"
+#include "TMath.h"
 using namespace std;
 
 void convertTH1ToTXT(TH1* inpHist, TString outputFileName)
@@ -243,4 +248,159 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 	cout << "Title: " << titleString << endl;
 
 	return outGraph;
+}
+
+double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping)
+{
+	TFile* rootFile = new TFile(filePath);
+
+	double phi;
+	TTree* theTree = (TTree*) rootFile->Get("hitTree");
+	theTree->SetMakeClass(1);
+	theTree->SetBranchAddress("phi", &(phi));
+
+	gROOT->cd(0);
+
+	const int numEntries = theTree->GetEntries();
+
+	vector<double> phiVec;
+	//theTree->GetEntry(0, 1);
+	for (int i = 0; i < numEntries; i++)
+	{
+
+		theTree->GetEntry(i, 1);
+
+		phiVec.push_back(phi);
+
+	}
+	rootFile->Close();
+	delete rootFile;
+
+	double mean;
+	if(useWrapping)
+	{
+		mean=reducePeridicToMeanInVector(phiVec);
+	}
+	else
+	{
+		mean= meanVector(phiVec);
+	}
+
+	double meanError;
+	double stdev = stDevVector(phiVec,true);
+	meanError = stdev / sqrt((double) phiVec.size());
+
+	cout << "-----------------" << endl;
+
+	cout << "For file: " << filePath << "    Number of particles measured: " << numEntries << endl;
+	cout << "Mean Phase: " << setprecision(15) << mean << " +/- " << meanError << endl;
+	cout << "Standard Deviation: " << stdev << " +/- " << meanError << endl;
+	cout << "-----------------" << endl;
+
+	if(imagePath != "")
+	{
+		TH1* phaseHist = new TH1D("phaseHist", "Phase Hist; Final phase (radians);Prob (counts/total counts)", 2048, mean - 3 * stdev, mean + 3 * stdev);
+
+		for (int i = 0; i < numEntries; ++i)
+		{
+			phaseHist->Fill(phiVec[i]);
+		}
+
+		TCanvas c2;
+		gStyle->SetOptStat("eMKS");
+		phaseHist->SetStats(true);
+		phaseHist->Rebin(8);
+
+		c2.SetGrid(1, 1);
+		gPad->SetTickx(1);
+		gPad->SetTicky(1);
+		gPad->SetLogy(1);
+		phaseHist->Draw();
+		c2.SaveAs(imagePath);
+		gStyle->SetOptStat("");
+
+		delete phaseHist;
+	}
+	return mean;
+}
+
+double meanVector(const vector<double>& theData)
+{
+	double mean = 0;
+	for(double x : theData)
+	{
+		mean += x;
+	}
+	mean /= theData.size();
+	return mean;
+}
+
+double stDevVector(const vector<double>& theData,const bool useBesselCorrection)
+{
+	double mean = meanVector(theData);
+	double stdev = 0;
+
+	for (double x : theData)
+	{
+		stdev += pow(x - mean, 2);
+	}
+
+	if(useBesselCorrection)
+	{
+		stdev /= theData.size() - 1;
+	}
+	else
+	{
+		stdev /= theData.size();
+	}
+
+	stdev = sqrt(stdev);
+
+	return stdev;
+
+}
+
+double minVector(const vector<double>& theData)
+{
+	return *(min_element(begin(theData),end(theData)));
+}
+
+double maxVector(const vector<double>& theData)
+{
+	return *(max_element(begin(theData),end(theData)));
+}
+
+double reducePeridicToMeanInVector(vector<double>& theData)
+{
+	double tempMean = meanVector(theData);
+	double mean=0;
+	for (double& x: theData)
+	{
+		x = reducePeriodicNumber(x, -TMath::Pi() + tempMean, TMath::Pi() + tempMean);
+		mean += x;
+	}
+	mean /= theData.size();
+
+	return mean;
+
+}
+
+
+double reducePeriodicNumber(const double inp, const double start, const double end)
+{
+	double period = end - start;
+	double answer = inp;
+	double fractPart, intPart;
+
+	fractPart = modf((inp - start) / period, &intPart);
+
+	if(inp > end)
+	{
+		answer = fractPart * period + start;
+	}
+	else if(inp < start)
+	{
+		answer = fractPart * period + end;
+	}
+	return answer;
 }

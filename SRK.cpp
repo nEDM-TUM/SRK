@@ -1,5 +1,8 @@
 #include <iostream>
 #include <time.h>
+#include <functional>
+#include <unordered_map>
+#include <string>
 
 #include "TRandom3.h"
 #include "TGraphErrors.h"
@@ -96,30 +99,33 @@ int main(int argc, char* argv[])
 //	theCanvas.SaveAs(SRKGRAPHSDIR+"DiffuseTest4.png");
 
 /* Test dipole ILL setup*/
-	TString runName="Dipole_1en11_30cm_Dynamic_1s_193m_s_E1e8";
+	TString runName="Dipole_1en12_30cm_Dynamic_100s_193m_s_E1e7";
 
 	SRKManager theManager;
 	theManager.setConstStepper(false);
-	//theManager.setPerStepError(1e-8,1e-8);
+	theManager.setUseAltStepping(false);
+	theManager.setPerStepError(1e-7,1e-7);
+	//theManager.setInitialStepSize(3e-3);
 	theManager.setUse2D(false);
 	theManager.setChamberHeight(.12);
 	theManager.setChamberRadius(0.235);
 	theManager.setDiffuseReflectionProb(1);
-	theManager.setDipolePosition(TVector3(0,0,-0.3-0.5*0.12));//30 cm below bottom of chamber
-//	theManager.setDipolePosition(TVector3(0,0,0.5*0.12));//Chamber top
-	theManager.setE0FieldStrength(1.e8);
-	//theManager.setE0FieldStrength(0);
-	theManager.setTimeLimit(1);
+	theManager.setDipolePosition(TVector3(0,0,-0.3-0.05*0.12));
+	theManager.setE0FieldStrength(1.e7);
+	theManager.setTimeLimit(100);
 	theManager.setMeanVel(193);
-	theManager.setDipoleFieldStrength(1e-11);
+	theManager.setDipoleFieldStrength(1e-12);
 	theManager.setBGradFieldStrength(0);
 	double falseEDMError;
-	double falseEDM=theManager.trackSpinsFalseEDM(2300000,runName, falseEDMError);
+	double falseEDM=theManager.trackSpinsFalseEDM(10000,runName, falseEDMError);
 
 	TString resultPath=SRKHISTSDIR+runName+".txt";
 	ofstream resultFile(resultPath.Data());
 	resultFile << scientific << setprecision(5) << falseEDM << "\t" << falseEDMError <<  endl;
 	resultFile.close();
+
+	makeMeanPhasePlot(SRKRESULTSDIR+runName+"P.root", SRKGRAPHSDIR+runName+"P_Reduced.pdf", true);
+	makeMeanPhasePlot(SRKRESULTSDIR+runName+"P.root", SRKGRAPHSDIR+runName+"P.pdf", false);
 
 	/*Solve memory issue*/
 //	SRKMotionTracker theMotionTracker;
@@ -134,6 +140,23 @@ int main(int argc, char* argv[])
 //	theManager.setDiffuseReflectionProb(1);
 //	theManager.setTimeLimit(100);
 //	theManager.trackSpinsDeltaOmegaSteyerlPlot(1000, "DiffuseConstantTime", 100,  0.1,1.3475,true,-1);
+
+	/*Playing with lambda maps*/
+
+
+//
+//	std::unordered_map<std::string,std::function<void(std::string)>> commandMap;
+//	std::string out="Matthew";
+//	commandMap["testCommand"]=[&](std::string last){out += " " + last;};
+//	commandMap["testCommand"]("Bales");
+//	cout << out << endl;
+
+	/*Make phase hists*/
+//	TString idString="Dipole_1en11_0cm_Dynamic_EPS1en10_100s_193m_s_E1e7A";
+//	makeMeanPhasePlot(SRKRESULTSDIR+idString+".root", SRKGRAPHSDIR+idString+"_Reduced.pdf", true);
+//	makeMeanPhasePlot(SRKRESULTSDIR+idString+".root", SRKGRAPHSDIR+idString+".pdf", false);
+
+
 
 	return 0;
 }

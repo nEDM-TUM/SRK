@@ -5,6 +5,8 @@
 #include <time.h>
 #include <iomanip>
 
+#include "SRKGraphics.h"
+
 using namespace std;
 
 SRKManager::SRKManager()
@@ -45,7 +47,7 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 	if(resultsFile->IsZombie() || !resultsFile->IsOpen())
 	{
-		cout << "Error opening track file: " << resultsFilePath << endl;
+		cout << "Error opening results file: " << resultsFilePath << endl;
 		return;
 
 	}
@@ -68,7 +70,7 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 void SRKManager::closeResultsFile()
 {
-	hitTree->Write("", TObject::kOverwrite);
+	resultsFile->Write("", TObject::kOverwrite);
 
 	resultsFile->Close();
 	delete resultsFile;
@@ -92,15 +94,12 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 
 }
 
-double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath)
+bool SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath)
 {
 	bool useDynamic = trackFilePath == "";
 
 	clock_t t1, t2;
 	t1 = clock();
-
-	vector<double> omegaArray; // For calculating mean and error
-	omegaArray.reserve(numTracks);
 
 	if(!useDynamic)
 	{
@@ -179,9 +178,6 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 				{
 					setFinalState(theState);
 					writeEvent(); //Write the final state only
-					double deltaOmega = phi / currentTime;
-					omegaArray.push_back(deltaOmega);
-
 				}
 				else
 				{
@@ -191,96 +187,9 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 			}
 		} while (!lastTrack);
 	}
-
-////Old Loop
-//	for (int i = 0; i < theMotionTracker->getTrackTreeEntries(); i++)
-//	{
-//		theMotionTracker->getTrackTreeEntry(i, pos, vel, currentTime, trackID, lastTrack);
-//		if(trackID >= numTracks)
-//		{
-//			break;
-//		}
-//		if(previousTrackID != trackID) //New Track
-//		{
-//			if(trackID % 100 == 0) cout << "Spinning track: " << trackID << endl;
-////			pos.Print();
-////			vel.Print();
-//			updateMotionStatePosVel(theState, pos, vel, currentTime);
-//			theState[6] = 0; //Phi
-//			theState[7] = 0; //Theta
-//			setInitialState(theState);
-//			previousTrackID = trackID;
-//		}
-//		else
-//		{
-//			if(useAltStepping)
-//			{
-//				theSpinTracker->trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta
-//			}
-//			else
-//			{
-//				theSpinTracker->trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta
-//			}
-//
-//			updateMotionStatePosVel(theState, pos, vel, currentTime); //Use the next reflection point for next step
-////			pos.Print();
-////			vel.Print();
-//			if(lastTrack) //Record at last point
-//			{
-//
-//				if(stepRecord == NULL)
-//				{
-//					setFinalState(theState);
-//					writeEvent(); //Write the final state only
-//					double deltaOmega = phi / currentTime;
-//					omegaArray.push_back(deltaOmega);
-//
-//				}
-//				else
-//				{
-//					writeAllSteps(stepRecord, stepTimes);
-//				}
-////				cout << "Steps taken: " << theSpinTracker.getStepsTaken() << endl;
-//				//	theSpinTracker.resetStepsTaken();
-//			}
-//
-//			previousTrackID = trackID;
-//		}
-//
-//	}
-
-	//Calc mean and Error and print
-	//Due to 2Pi repetition, first calc mean, then calc diff, then determine reduced diff phi and give the apparent delta phase
-	errorOmega = 0;
-	meanOmega = 0;
-	double tempMean = 0;
-	for (unsigned int i = 0; i < omegaArray.size(); i++)
-	{
-		tempMean += omegaArray[i];
-		meanOmega += omegaArray[i];
-	}
-	tempMean /= numTracks;
-	meanOmega /= numTracks;
-
-	meanOmega = 0;
-	for (unsigned int i = 0; i < omegaArray.size(); i++)
-	{
-		double reduction = reducePeriodicNumber(omegaArray[i], -TMath::Pi() + tempMean, TMath::Pi() + tempMean);
-		omegaArray[i] = reduction;
-		meanOmega += omegaArray[i];
-	}
-	meanOmega /= numTracks;
-
-	for (unsigned int i = 0; i < omegaArray.size(); i++)
-	{
-		errorOmega += pow(omegaArray[i] - meanOmega, 2);
-	}
-	errorOmega /= numTracks - 1;
-	errorOmega = sqrt(errorOmega); //STDev at this point
-	errorOmega /= sqrt(numTracks); //Now it's error of the mean
-
-	cout << resultsFilePath << "-- Mean omega: " << setprecision(15) << fixed << meanOmega << " +/- " << scientific << errorOmega << endl;
+	theMotionTracker->closeTrackFile();
 	closeResultsFile();
+	makeMeanPhasePlot(resultsFilePath, "", true); //Prints mean and stdev, no plot
 
 	theMotionTracker->closeTrackFile();
 
@@ -297,30 +206,11 @@ double SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resu
 
 	double diff = ((double) t2 - (double) t1) / (double) CLOCKS_PER_SEC;
 	cout << "Computation time: " << fixed << setprecision(3) << diff << "   Tracks per Second: " << (double) numTracks / diff << "   Tracks per hour: " << (float) numTracks * 3600 / diff << endl;
-	;
 	cout.unsetf(ios_base::floatfield);
 
-	return static_cast<double>(theState[6]); //Phi
+	return true;
 }
 
-double SRKManager::reducePeriodicNumber(double inp, double start, double end)
-{
-	double period = end - start;
-	double answer = inp;
-	double fractPart, intPart;
-
-	fractPart = modf((inp - start) / period, &intPart);
-
-	if(inp > end)
-	{
-		answer = fractPart * period + start;
-	}
-	else if(inp < start)
-	{
-		answer = fractPart * period + end;
-	}
-	return answer;
-}
 
 void SRKManager::setInitialState(SRKMotionState& initialState)
 {
@@ -482,7 +372,7 @@ void SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString 
 	//outGraph->GetYaxis()->SetRangeUser(-3.4999,2);
 
 	outGraph->Draw("APE1");
-	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString +".png");
+	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString + ".png");
 
 	//Eventually I should figure out where to throw this function...
 	ofstream outFile;

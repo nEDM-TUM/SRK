@@ -20,7 +20,7 @@ public:
 	SRKManager();
 	virtual ~SRKManager();
 
-	double trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath);
+	bool trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath);
 	double trackSpinsDeltaOmega(int numTracks, TString runNameString, double& deltaOmegaError);
 	double trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameString, double& deltaOmegaSteyerlError);
 	void trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
@@ -70,7 +70,6 @@ protected:
 	void writeEvent();
 	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);
 	void loadFields();
-	double reducePeriodicNumber(double inp, double start, double end);
 
 	TVector3 pos0, pos, vel0, vel; //For recording
 	double phi0, phi, theta0, theta; //For recording
