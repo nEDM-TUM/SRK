@@ -40,6 +40,9 @@ public:
 	inline double getMeanVel(){return meanVel;}
 	inline int getTrackTreeEntries(){return trackTree->GetEntries();}
 	inline int getTotalReflections(){return totalReflections;}
+	inline TVector3 getPos(){return pos;}
+	inline TVector3 getVel(){return vel;}
+	inline bool getManualTracking(){return manualTracking;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -48,6 +51,9 @@ public:
 	inline void setUse2D(bool inp){use2D=inp;}
 	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height);}
 	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height);}
+	inline void setPos(const TVector3& inp){ pos=inp;}
+	inline void setVel(const TVector3& inp){ vel=inp;}
+	inline void setManualTracking(const bool inp){ manualTracking=inp;}
 
 protected:
 
@@ -67,6 +73,7 @@ protected:
 	int reflectionLimit; //Stop after a numer of reflections
 	bool use2D;
 	bool useGravity;
+	bool manualTracking; //Instead of random
 	double diffuseReflectionProb;  //0 = Specular 1=Diffuse Lambert
 
 	//Particle

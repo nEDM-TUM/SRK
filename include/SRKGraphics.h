@@ -23,12 +23,15 @@ TString fileNameFromFullPath(TString fullPath);
 int countTString(TString inpString, char inpChar);
 int getNonCommentLine(ifstream& inpFileStream, TString& outString, char delim);
 TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim = '\n');
-double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping);
+double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping,double& errorOut);
 double meanVector(const std::vector<double>& theData);
+double carefulMeanVector(const std::vector<double>& theData);
 double stDevVector(const std::vector<double>& theData,const bool useBesselCorrection);
+double carefullStDevVector(const std::vector<double>& theData, const bool useBesselCorrection);
 double minVector(const std::vector<double>& theData);
 double maxVector(const std::vector<double>& theData);
-double reducePeridicToMeanInVector(std::vector<double>& theData);
+double reducePeriodicToMeanInVector(std::vector<double>& theData);
 double reducePeriodicNumber(const double inp, const double start, double end);
-
+void makeSteyerlPlot(TString titleString, std::vector<TGraphErrors*> theGraphs, std::vector<TString> legendList,TString imagePath);
+void saveGraphsToImage(std::vector<TGraphErrors*> theGraphs, std::vector<TString> legendList, TString imagePath);
 #endif /* SRKGRAPHICS_H_ */

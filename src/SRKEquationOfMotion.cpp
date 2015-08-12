@@ -51,7 +51,7 @@ void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dx
 	SRKSpinFloat cosphi = cos(phi);
 
 	SRKSpinFloat dphi = gyromagneticRatio * (thetaPrime * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Presumes tan(theta)~=theta
-	//double dphi = SRKSpinFloat(gyromagneticRatio) * (tan(thetaPrime) * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Exact equation (though issues if theta wraps around
+//	SRKSpinFloat dphi = gyromagneticRatio * (tan(thetaPrime) * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Exact equation (though issues if theta wraps around
 	SRKSpinFloat dthetaPrime = gyromagneticRatio * (theField[1] * cosphi - theField[0] * sinphi);
 
 	dxdt[6] = dphi;

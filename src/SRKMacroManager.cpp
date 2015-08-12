@@ -1,11 +1,14 @@
 #include "SRKMacroManager.h"
 #include <iostream>
 #include <fstream>
+#include <sstream>
+
 using namespace std;
 
 SRKMacroManager::SRKMacroManager(SRKManager* inpManager)
 {
 	theManager = inpManager;
+	defineCommands();
 
 }
 
@@ -18,40 +21,116 @@ bool SRKMacroManager::openMacroFile(TString filePath)
 {
 	ifstream theFile(filePath);
 	TString sBuffer("#");
-	if(!theFile.is_open() || theFile.fail() || theFile.eof()) return false;
+	if(!theFile.is_open() || theFile.fail() || theFile.eof())
+	{
+		cout << "Macro file: " << filePath << " not recognized" << endl;
+		return false;
+	}
+
+	cout << "Opening macro file: " << filePath << endl;
+	std::list<TString> fileCommandStringList;
+	std::list<TString> fileCommandValueStringList;
 
 	while (!theFile.fail() || !theFile.eof())
 	{
 		skipCommentLines(theFile);
-		if(theFile.eof()) return true;
+		if(theFile.eof()) break;
 		TString commandString, commandValueString;
-		theFile >> commandString >> commandValueString;
-		commandStringList.push(commandString);
-		commandValueStringList.push(commandValueString);
+		theFile >> commandString;
+		theFile.ignore(1);
+		commandValueString.ReadLine(theFile); //rest is value
+		cout << "Grabbed: " << commandString << "  and value: " << commandValueString << endl;
+
+		fileCommandStringList.push_back(commandString);
+		fileCommandValueStringList.push_back(commandValueString);
 	}
+
+	theFile.close();
+
+	commandStringList.splice(commandStringList.begin(), fileCommandStringList);
+	cout << "Number of commands: " << commandStringList.size() << endl;
+	commandValueStringList.splice(commandValueStringList.begin(), fileCommandValueStringList);
 
 	return true;
 }
 
-void SRKMacroManager::doMacroCommands()
+void SRKMacroManager::runMacroCommands()
 {
 	while (!commandStringList.empty())
 	{
-		cout << "SRK: " << commandStringList.front() << " " << commandValueStringList.front() << endl;
 
-		commandStringList.pop();
-		commandValueStringList.pop();
+		TString command = commandStringList.front();
+		TString value = commandValueStringList.front();
+
+		cout << "SRK: " << command << " " << value << endl;
+		if(!runMacroCommand(command.Data(), value.Data()))
+		{
+			break;  //Break if there is a command issue;
+		}
+
+		commandStringList.pop_front();
+		commandValueStringList.pop_front();
 
 	}
 }
 
+void SRKMacroManager::enterInteractiveMode()
+{
+	cout << endl << endl;
+	cout << "*******************************************************" << endl;
+	cout << "*  SRK Interactive Mode" << endl;
+	cout << "*  Type \"q\" to exit." << endl;
+	cout << "*******************************************************" << endl;
+	bool endInteractiveMode = false;
+	stringstream lineStream;
+	while (!endInteractiveMode)
+	{
+		cout << "SRK: ";
+		string theLine;
+		getline(cin, theLine);
+		if(theLine == "end" || theLine == "quit" || theLine == "exit" || theLine == "q")
+		{
+			cout << "Exiting Interactive Mode..." << endl;
+			endInteractiveMode=true;
+			break;
+		}
+		lineStream.clear();
+		lineStream << theLine;
+		string commandString, commandValueString;
+		lineStream >> commandString;
+		lineStream.ignore(1);
+		getline(lineStream, commandValueString);
+		//cout << "Command: " << commandString << "  Value: " << commandValueString << endl;
+		runMacroCommand(commandString,  commandValueString);
+
+		if(commandString=="runMacroFile") //Need to follow up and run the commands that got added but still return to interactive mode.
+		{
+			runMacroCommands();
+		}
+	}
+}
+
+bool SRKMacroManager::runMacroCommand(string command, string value)
+{
+	if(commandMap.count(command) == 0) //Command doesn't exist?
+	{
+		cout << "Command: " << command << " doesn't exist!" << endl;
+		return false;
+	}
+
+	commandMap[command](value);
+	return true;
+}
+
 bool SRKMacroManager::skipCommentLines(ifstream& inpFileStream)
 {
-	TString sBuffer;
+
 	if(!inpFileStream.is_open() || inpFileStream.fail() || inpFileStream.eof()) return -1;
-	while (inpFileStream.peek() == '#' || inpFileStream.peek() == '%')
+	char peek = inpFileStream.peek();
+	while (peek == '#' || peek == '%' || peek == '\n')
 	{
-		sBuffer.ReadLine(inpFileStream);
+		inpFileStream.ignore(numeric_limits<streamsize>::max(), '\n'); //discards everything in that line
+		peek = inpFileStream.peek();
 	}
 
 	if(!inpFileStream.is_open() || inpFileStream.fail() || inpFileStream.eof()) return false;
@@ -78,11 +157,11 @@ bool SRKMacroManager::getNonCommentLine(ifstream& inpFileStream, TString& outStr
 
 bool SRKMacroManager::stobool(string inp)
 {
-	if(inp=="0" || inp=="false" || inp=="FALSE" || inp=="False")
+	if(inp == "0" || inp == "false" || inp == "FALSE" || inp == "False")
 	{
 		return false;
 	}
-	else if(inp=="1" || inp=="true" || inp=="TRUE" || inp=="True")
+	else if(inp == "1" || inp == "true" || inp == "TRUE" || inp == "True")
 	{
 		return true;
 	}
@@ -93,8 +172,46 @@ bool SRKMacroManager::stobool(string inp)
 	return false;
 }
 
+TVector3 SRKMacroManager::stoTVector3(string inp)
+{
+	stringstream aStringStream(inp);
+	double x, y, z;
+	aStringStream >> x >> y >> z;
+
+	return TVector3(x, y, z);
+
+}
+
 void SRKMacroManager::defineCommands()
 {
-	commandMap["recordAllSteps"]=[this](string inp){theManager->setRecordAllSteps(stobool(inp));};
-	commandMap["recordAllSteps"]=[this](string inp){theManager->setRecordAllSteps(stobool(inp));};
+	commandMap["setRecordAllSteps"] = [&](string inp) {	theManager->setRecordAllSteps(stobool(inp));};
+	commandMap["setUseAltStepping"] = [&](string inp) {	theManager->setUseAltStepping(stobool(inp));};
+	commandMap["setParallelFields"] = [&](string inp) {	theManager->setParallelFields(stobool(inp));};
+	commandMap["setUse2D"] = [&](string inp) {	theManager->setUse2D(stobool(inp));};
+	commandMap["setConstStepper"] = [&](string inp) 	{	theManager->setConstStepper(stobool(inp));};
+	commandMap["setManualTracking"] = [&](string inp) {	theManager->setManualTracking(stobool(inp));};
+	commandMap["setGyromagneticRatio"] = [&](string inp){	theManager->setGyromagneticRatio(stod(inp));};
+	commandMap["setTimeLimit"] = [&](string inp){	theManager->setTimeLimit(stod(inp));};
+	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->setDiffuseReflectionProb(stod(inp));};
+	commandMap["setMeanVel"] = [&](string inp){	theManager->setMeanVel(stod(inp));};
+	commandMap["setReflectionLimit"] = [&](string inp)	{	theManager->setReflectionLimit(stod(inp));};
+	commandMap["setVelByOmegaSteyerl"] = [&](string inp){	theManager->setVelByOmegaSteyerl(stod(inp));};
+	commandMap["setChamberRadius"] = [&](string inp){	theManager->setChamberRadius(stod(inp));};
+	commandMap["setChamberHeight"] = [&](string inp){	theManager->setChamberHeight(stod(inp));};
+	commandMap["setB0FieldStrength"] = [&](string inp){	theManager->setB0FieldStrength(stod(inp));};
+	commandMap["setE0FieldStrength"] = [&](string inp)	{	theManager->setE0FieldStrength(stod(inp));};
+	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};
+	commandMap["setDipoleFieldStrength"] = [&](string inp){	theManager->setDipoleFieldStrength(stod(inp));};
+	commandMap["setPerStepError"] = [&](string inp){	theManager->setPerStepError(stod(inp));};
+	commandMap["setInitialStepSize"] = [&](string inp){	theManager->setInitialStepSize(stod(inp));};
+	commandMap["setDipolePosition"] = [&](string inp){	theManager->setDipolePosition(stoTVector3(inp));};
+	commandMap["setDipoleDirection"] = [&](string inp){	theManager->setDipoleDirection(stoTVector3(inp));};
+	commandMap["setPos"] = [&](string inp)	{	theManager->setPos(stoTVector3(inp));};
+	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
+	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};
+	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
+	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
+	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};
+	commandMap["runMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
+
 }

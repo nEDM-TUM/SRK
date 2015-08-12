@@ -19,5 +19,9 @@ void SRKDipoleField::addFieldValue(const double globalPoint[4], double *Bfield) 
 	Bfield[g4FieldY] += scalingFactorWUnits * (Point[1] * mdotr - fs.moment.y() * r3inv);
 	Bfield[g4FieldZ] += scalingFactorWUnits * (Point[2] * mdotr - fs.moment.z() * r3inv);
 
+//	cout << "Point: " << Point[0] << "\t" << Point[1] << "\t" << Point[2] << endl;
+//	cout << "Field: " << Bfield[0] << "\t" << Bfield[1] << "\t" << Bfield[2] << endl;
+
+
 }
 

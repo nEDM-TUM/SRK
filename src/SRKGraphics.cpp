@@ -5,6 +5,8 @@
 #include "TTree.h"
 #include "TStyle.h"
 #include "TMath.h"
+#include "TLegend.h"
+#include "TF1.h"
 using namespace std;
 
 void convertTH1ToTXT(TH1* inpHist, TString outputFileName)
@@ -250,7 +252,7 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 	return outGraph;
 }
 
-double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping)
+double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping, double& errorOut)
 {
 	TFile* rootFile = new TFile(filePath);
 
@@ -279,23 +281,15 @@ double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping)
 	double mean;
 	if(useWrapping)
 	{
-		mean=reducePeridicToMeanInVector(phiVec);
+		mean = reducePeriodicToMeanInVector(phiVec);
 	}
 	else
 	{
-		mean= meanVector(phiVec);
+		mean = carefulMeanVector(phiVec);
 	}
 
-	double meanError;
-	double stdev = stDevVector(phiVec,true);
-	meanError = stdev / sqrt((double) phiVec.size());
-
-	cout << "-----------------" << endl;
-
-	cout << "For file: " << filePath << "    Number of particles measured: " << numEntries << endl;
-	cout << "Mean Phase: " << setprecision(15) << mean << " +/- " << meanError << endl;
-	cout << "Standard Deviation: " << stdev << " +/- " << meanError << endl;
-	cout << "-----------------" << endl;
+	double stdev = carefullStDevVector(phiVec, true);
+	errorOut = stdev / sqrt((double) phiVec.size());
 
 	if(imagePath != "")
 	{
@@ -316,6 +310,24 @@ double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping)
 		gPad->SetTicky(1);
 		gPad->SetLogy(1);
 		phaseHist->Draw();
+
+		//TsallisFunc
+		TF1 f1("TsallisFunc", "[0]/pow(1+((x-[3])/[1])*((x-[3])/[1]),[2])", mean - 3 * stdev, mean + 3 * stdev);
+		f1.SetParNames("Amplitude","Sigma","Power","Mean");
+		f1.SetParameters(phaseHist->GetMaximum()*5, stdev*0.005,.76,mean);
+		f1.SetParLimits(3,mean,mean);
+
+//		TF1 f1("Gaussian", "[0]*exp(-0.5*((x-[1])/[2])*((x-[1])/[2]))", mean - 3 * stdev, mean + 3 * stdev);
+//		f1.SetParNames("Amplitude", "Sigma", "Mean");
+//		f1.SetParameters(100, mean, stdev);
+//		f1.SetParLimits(0, 80, 1000);
+//		f1.SetParLimits(1, 0, 0.0001);
+//		f1.SetParLimits(2, mean-stdev, mean+stdev);
+
+		f1.SetLineColor(kRed);
+		phaseHist->Fit(&f1, "VMR+");
+		f1.Draw("same");
+
 		c2.SaveAs(imagePath);
 		gStyle->SetOptStat("");
 
@@ -327,7 +339,7 @@ double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping)
 double meanVector(const vector<double>& theData)
 {
 	double mean = 0;
-	for(double x : theData)
+	for (double x : theData)
 	{
 		mean += x;
 	}
@@ -335,7 +347,23 @@ double meanVector(const vector<double>& theData)
 	return mean;
 }
 
-double stDevVector(const vector<double>& theData,const bool useBesselCorrection)
+//Worried about precision
+double carefulMeanVector(const vector<double>& theData)
+{
+	//First calc mean to use in subtraction
+	double tempMean = meanVector(theData);
+
+	double mean = 0;
+	for (double x : theData)
+	{
+		mean += (x - tempMean);
+	}
+	mean /= theData.size();
+	mean += tempMean;
+	return mean;
+}
+
+double stDevVector(const vector<double>& theData, const bool useBesselCorrection)
 {
 	double mean = meanVector(theData);
 	double stdev = 0;
@@ -360,21 +388,46 @@ double stDevVector(const vector<double>& theData,const bool useBesselCorrection)
 
 }
 
+double carefullStDevVector(const vector<double>& theData, const bool useBesselCorrection)
+{
+	double mean = carefulMeanVector(theData);
+	double stdev = 0;
+
+	for (double x : theData)
+	{
+		stdev += pow(x - mean, 2);
+	}
+
+	if(useBesselCorrection)
+	{
+		stdev /= theData.size() - 1;
+	}
+	else
+	{
+		stdev /= theData.size();
+	}
+
+	stdev = sqrt(stdev);
+
+	return stdev;
+
+}
+
 double minVector(const vector<double>& theData)
 {
-	return *(min_element(begin(theData),end(theData)));
+	return *(min_element(begin(theData), end(theData)));
 }
 
 double maxVector(const vector<double>& theData)
 {
-	return *(max_element(begin(theData),end(theData)));
+	return *(max_element(begin(theData), end(theData)));
 }
 
-double reducePeridicToMeanInVector(vector<double>& theData)
+double reducePeriodicToMeanInVector(vector<double>& theData)
 {
-	double tempMean = meanVector(theData);
-	double mean=0;
-	for (double& x: theData)
+	double tempMean = carefulMeanVector(theData);
+	double mean = 0;
+	for (double& x : theData)
 	{
 		x = reducePeriodicNumber(x, -TMath::Pi() + tempMean, TMath::Pi() + tempMean);
 		mean += x;
@@ -384,7 +437,6 @@ double reducePeridicToMeanInVector(vector<double>& theData)
 	return mean;
 
 }
-
 
 double reducePeriodicNumber(const double inp, const double start, const double end)
 {
@@ -403,4 +455,101 @@ double reducePeriodicNumber(const double inp, const double start, const double e
 		answer = fractPart * period + end;
 	}
 	return answer;
+}
+
+void makeSteyerlPlot(TString titleString, vector<TGraphErrors*> theGraphs, vector<TString> legendList, TString imagePath)
+{
+
+	TCanvas* theCanvas = new TCanvas("theCanvas", "theCanvas", 1200, 1200);
+	theCanvas->cd();
+	theCanvas->SetLeftMargin(.09);
+	theCanvas->SetRightMargin(.05);
+	gPad->SetTickx(1);
+	gPad->SetTicky(1);
+	gPad->SetFillColor(kWhite);
+
+	TLegend* theLegend;
+	double legendSize = .1 * theGraphs.size();
+	if(legendSize < .15) legendSize = .15;
+	theLegend = new TLegend(0.55, .9 - legendSize, 0.8705314, 0.8381924);
+
+	for (unsigned int i = 0; i < theGraphs.size(); ++i)
+	{
+		TGraphErrors* theGraph = theGraphs[i];
+		if(i == 0)
+		{
+			theGraph->SetTitle(titleString);
+			theGraph->Draw("AP");
+			theGraph->GetYaxis()->SetTitle("#frac{#Delta#omega}{#zeta#eta#omega_{0}}");
+			theGraph->GetXaxis()->SetTitle("#omega_{r} / #omega_{0}");
+			theGraph->GetXaxis()->SetLimits(0.01, 100);
+			theGraph->GetXaxis()->SetRangeUser(0.01, 100);
+			theGraph->GetXaxis()->SetNoExponent();
+			theGraph->GetYaxis()->SetLimits(-3.4999, 2);
+			theGraph->GetYaxis()->SetRangeUser(-3.4999, 2);
+			theGraph->SetLineColor(kRed);
+			theGraph->SetLineStyle(2);
+
+		}
+		else
+		{
+			theGraph->Draw("PE same");
+			theGraph->SetLineColor(kBlue);
+
+		}
+		theLegend->AddEntry(theGraph, legendList[i], "L");
+	}
+
+	theLegend->Draw();
+	theCanvas->SetLogx();
+	theCanvas->SaveAs(imagePath);
+	delete theCanvas;
+}
+
+void saveGraphsToImage(vector<TGraphErrors*> theGraphs, vector<TString> legendList, TString imagePath)
+{
+	TCanvas* theCanvas = new TCanvas("theCanvas", "theCanvas", 1200, 1200);
+//	theGraphs[0]->Draw("ALX");
+	theCanvas->cd();
+	theCanvas->SetLeftMargin(.13);
+	theCanvas->SetRightMargin(.05);
+	gPad->SetTickx(1);
+	gPad->SetTicky(1);
+	gPad->SetFillColor(kWhite);
+	theCanvas->SetLogy();
+	theCanvas->SetLogx();
+
+	TLegend* theLegend;
+	double legendSize = .1 * theGraphs.size();
+	if(legendSize < .15) legendSize = .15;
+	theLegend = new TLegend(0.2, .9 - legendSize, 0.4, 0.9);
+
+	for (unsigned int i = 0; i < theGraphs.size(); ++i)
+	{
+		TGraphErrors* theGraph = theGraphs[i];
+
+		if(i == 0)
+		{
+
+			theGraph->SetLineColor(kRed);
+			theGraph->SetLineStyle(2);
+			theGraph->SetMarkerStyle(4);
+			theGraph->GetYaxis()->SetTitleOffset(1.6);
+			theGraph->GetYaxis()->SetRangeUser(1e-34, 1e-27);
+			theGraph->GetXaxis()->SetLimits(1.58E-011, 1.e-6);
+			theGraph->Draw("ALX");
+		}
+		else
+		{
+			theGraph->Draw("LX same");
+			theGraph->SetLineColor(kBlue);
+
+		}
+		theLegend->AddEntry(theGraph, legendList[i], "L");
+	}
+
+	theLegend->Draw();
+
+	theCanvas->SaveAs(imagePath);
+	delete theCanvas;
 }

@@ -13,6 +13,7 @@ const TString SRKRESULTSDIR = "/home/mjbales/work/nedm/results/";
 const TString SRKHISTSDIR = "/home/mjbales/work/nedm/hists/";
 const TString SRKGRAPHSDIR = "/home/mjbales/work/nedm/graphs/";
 const TString SRKTRACKSDIR = "/home/mjbales/work/nedm/tracks/";
+const TString SRKMACROSDIR = "/home/mjbales/work/nedm/macros/";
 
 class SRKManager
 {
@@ -20,15 +21,14 @@ public:
 	SRKManager();
 	virtual ~SRKManager();
 
-	bool trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath);
-	double trackSpinsDeltaOmega(int numTracks, TString runNameString, double& deltaOmegaError);
-	double trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameString, double& deltaOmegaSteyerlError);
-	void trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
-	double trackSpinsFalseEDM(int numTracks, TString runNameString, double& falseEDMError);  //False EDM in e*cm
+	bool trackSpins(int numTracks);
+	void trackSpinsDeltaOmega(int numTracks);
+	//TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
 
 	//Getters
-	inline double getMeanOmega(){return meanOmega;}
-	inline double getErrorOmega(){return errorOmega;}
+	inline bool getRecordAllSteps(){return recordAllSteps;}
+	inline double getPhaseMean(){return phaseMean;}
+	inline double getPhaseError(){return phaseError;}
 	inline double getGyromagneticRatio(){return theSpinTracker->getGyromagneticRatio();}
 	inline double getTimeLimit(){return theMotionTracker->getTimeLimit();}
 	inline double getDiffuseReflectionProb(){return theMotionTracker->getDiffuseReflectionProb();}
@@ -58,9 +58,15 @@ public:
 	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
 	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
 	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
-	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
+	inline void setPos(const TVector3& inp){ theMotionTracker->setPos(inp);}
+	inline void setVel(const TVector3& inp){ theMotionTracker->setVel(inp);}
+	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel=0){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
 	inline void setInitialStepSize(double inp){theSpinTracker->setInitialStepSize(inp);}
 	inline void setConstStepper(bool inp){theSpinTracker->setConstStepper(inp);}
+	inline void setManualTracking(bool inp){ theMotionTracker->setManualTracking(inp);}
+	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
+	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
+	inline void setRunID(TString inp) {runID=inp;}
 
 protected:
 	void createResultsFile(TString resultsFilePath);
@@ -70,6 +76,8 @@ protected:
 	void writeEvent();
 	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);
 	void loadFields();
+	void calcDeltaPhaseMean(TString inpRunID);
+
 
 	TVector3 pos0, pos, vel0, vel; //For recording
 	double phi0, phi, theta0, theta; //For recording
@@ -81,10 +89,15 @@ protected:
 	bool useAltStepping;
 	bool parallelFields;
 
+	TString trackFilePath;
+	TString resultsFilePath;
+	TString runID;
+
 	TFile* resultsFile;
 	TTree* hitTree;
 
-	double meanOmega, errorOmega;
+	double phaseMean, phaseError;
+	double deltaPhaseMean,deltaPhaseError;
 
 	SRKGlobalField* theGlobalField;
 	SRKSpinTracker* theSpinTracker;

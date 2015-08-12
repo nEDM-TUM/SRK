@@ -55,7 +55,7 @@ SRKField::SRKField(FieldSettings inpFS)
 	if(fs.fieldClass == FIELDCLASS_DIPOLE)
 	{
 		//scalingFactorWUnits *= 1. / (4 * TMath::Pi());
-		scalingFactorWUnits *= 1.; //Believe this is how Pignol and Roccia define it.
+		scalingFactorWUnits *= 1.; //Pignol and Roccia definition
 	}
 	else if(fs.fieldClass == FIELDCLASS_GRADIENT)
 	{

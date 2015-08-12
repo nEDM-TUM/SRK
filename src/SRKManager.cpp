@@ -21,12 +21,15 @@ SRKManager::SRKManager()
 	theMotionTracker = new SRKMotionTracker();
 	b0FieldStrength = 1e-6;
 	e0FieldStrength = 1e6;
-	bGradFieldStrength = 1e-9;
+	bGradFieldStrength = 0;
 	dipoleFieldStrength = 0;
 	dipolePosition.SetXYZ(0, 0, 0);
 	dipoleDirection.SetXYZ(0, 0, 1);
-	meanOmega = phi = phi0 = theta = theta0 = time = time0 = errorOmega = 0.;
+	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
+	trackFilePath = "!dynamic";
+	resultsFilePath = SRKRESULTSDIR + "test.root";
+	runID="RIDX";
 }
 
 SRKManager::~SRKManager()
@@ -94,9 +97,9 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 
 }
 
-bool SRKManager::trackSpins(int numTracks, TString trackFilePath, TString resultsFilePath)
+bool SRKManager::trackSpins(int numTracks)
 {
-	bool useDynamic = trackFilePath == "";
+	bool useDynamic = trackFilePath == "!dynamic";
 
 	clock_t t1, t2;
 	t1 = clock();
@@ -132,7 +135,15 @@ bool SRKManager::trackSpins(int numTracks, TString trackFilePath, TString result
 		//Starting point
 		if(useDynamic)
 		{
-			theMotionTracker->getRandomDirectionAndPointInCylinder(pos, vel);
+			if(theMotionTracker->getManualTracking())
+			{
+				pos = theMotionTracker->getPos();
+				vel = theMotionTracker->getVel();
+			}
+			else
+			{
+				theMotionTracker->getRandomDirectionAndPointInCylinder(pos, vel);
+			}
 //			pos.SetXYZ(0,0,0);
 			trackID = i;
 			lastTrack = false;
@@ -189,7 +200,12 @@ bool SRKManager::trackSpins(int numTracks, TString trackFilePath, TString result
 	}
 	theMotionTracker->closeTrackFile();
 	closeResultsFile();
-	makeMeanPhasePlot(resultsFilePath, "", true); //Prints mean and stdev, no plot
+	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError); //Prints mean and stdev, no plot
+
+	cout << "-----------------" << endl;
+	cout << "For file: " << resultsFilePath << "    Number of particles measured: " << numTracks << endl;
+	cout << "Mean Phase: " << setprecision(15) << phaseMean << " +/- " << phaseError << endl;
+	cout << "-----------------" << endl;
 
 	theMotionTracker->closeTrackFile();
 
@@ -210,7 +226,6 @@ bool SRKManager::trackSpins(int numTracks, TString trackFilePath, TString result
 
 	return true;
 }
-
 
 void SRKManager::setInitialState(SRKMotionState& initialState)
 {
@@ -267,134 +282,127 @@ void SRKManager::loadFields()
 
 }
 
-double SRKManager::trackSpinsDeltaOmega(int numTracks, TString runNameString, double& deltaOmegaError)
+void SRKManager::calcDeltaPhaseMean(TString inpRunID)
+{
+	double parMean,parError,antiMean,antiError;
+	parMean=makeMeanPhasePlot(SRKRESULTSDIR+"Results_"+inpRunID+"_P.root", "", true, parError); //Prints mean and stdev, no plot
+	antiMean=makeMeanPhasePlot(SRKRESULTSDIR+"Results_"+inpRunID+"_A.root", "", true, antiError);//Prints mean and stdev, no plot
+	deltaPhaseMean = parMean - antiMean;
+	deltaPhaseError = sqrt(parError * parError + antiError * antiError);
+
+}
+
+void SRKManager::trackSpinsDeltaOmega(int numTracks)
 {
 	//Run Parallel
 	setParallelFields(true);
-	trackSpins(numTracks, "", SRKRESULTSDIR + runNameString + "P.root");
-	double parMean = getMeanOmega();
-	double parError = getErrorOmega();
+	resultsFilePath = SRKRESULTSDIR + "Results_" + runID + "_P.root";
+	trackSpins(numTracks);
+
 
 	//Run Anti-Parallel
 	setParallelFields(false);
-	trackSpins(numTracks, "", SRKRESULTSDIR + runNameString + "A.root");
-	double antiMean = getMeanOmega();
-	double antiError = getErrorOmega();
+	resultsFilePath = SRKRESULTSDIR + "Results_" + runID + "_A.root";
+	trackSpins(numTracks);
 
-	deltaOmegaError = sqrt(parError * parError + antiError * antiError);
-	double deltaOmega = parMean - antiMean;
+	calcDeltaPhaseMean(runID);
+	double deltaOmega=deltaPhaseMean/getTimeLimit();
+	double deltaOmegaError=deltaPhaseError/getTimeLimit();
+
+
 	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError << endl;
-	cout.unsetf(ios_base::floatfield);
-	return deltaOmega;
-
-}
-
-double SRKManager::trackSpinsFalseEDM(int numTracks, TString runNameString, double& falseEDMError)
-{
 	double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
-	double falseEDM = trackSpinsDeltaOmega(numTracks, runNameString, falseEDMError) * scaleFactor;
-	falseEDMError *= scaleFactor;
-
-	cout << "False EDM [e cm]: " << scientific << setprecision(5) << falseEDM << " +/- " << falseEDMError << endl;
-	cout.unsetf(ios_base::floatfield);
-	return falseEDM;
-
-}
-
-double SRKManager::trackSpinsDeltaOmegaSteyerl(int numTracks, TString runNameString, double& deltaOmegaSteyerlError)
-{
-	double meanDeltaOmegaSteyerl = trackSpinsDeltaOmega(numTracks, runNameString, deltaOmegaSteyerlError);
+	cout << "False EDM [e cm]: " << scientific << setprecision(5) << deltaOmega*scaleFactor << " +/- " << deltaOmegaError*scaleFactor << endl;
 	double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
-	deltaOmegaSteyerlError /= zetaEtaOmega0;
-	meanDeltaOmegaSteyerl /= zetaEtaOmega0;
-
-	cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << meanDeltaOmegaSteyerl << " +/- " << deltaOmegaSteyerlError << endl;
+	cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << deltaOmega/zetaEtaOmega0 << " +/- " << deltaOmegaError/zetaEtaOmega0 << endl;
 	cout.unsetf(ios_base::floatfield);
-	return meanDeltaOmegaSteyerl;
 
 }
 
-void SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd, bool useLog, int approximateReflectionsFixedTime)
-{
-	vector<double> x(numOmegaSteyerl);
-	vector<double> y(numOmegaSteyerl);
-	vector<double> eY(numOmegaSteyerl);
-
-	double oldTimeLimit = getTimeLimit(); //in case we are using approximateRefelectionsFixedTime
-
-	double increment;
-	if(useLog)
-	{
-		increment = (log10(OmegaSteyerlEnd) - log10(OmegaSteyerlStart)) / (numOmegaSteyerl - 1);
-	}
-	else
-	{
-		increment = (OmegaSteyerlEnd - OmegaSteyerlStart) / (numOmegaSteyerl - 1);
-	}
-
-	for (int i = 0; i < numOmegaSteyerl; i++)
-	{
-		//If we want to emulate a fixed number of reflections but still not bias, we'll use a time limit to get us close to the same reflections
-
-		if(useLog)
-		{
-			x[i] = pow(10, log10(OmegaSteyerlStart) + increment * i);
-		}
-		else
-		{
-			x[i] = OmegaSteyerlStart + increment * i;
-		}
-		setVelByOmegaSteyerl(x[i]);
-		if(approximateReflectionsFixedTime > 0)
-		{
-			double timeLimit = approximateReflectionsFixedTime * .4 / abs(getMeanVel());
-			setTimeLimit(timeLimit);
-		}
-		cout << " ------------------------------" << endl;
-		cout << "Set#: " << i << "    Omega = " << x[i] << "    Vel = " << getMeanVel() << endl;
-		cout << " ------------------------------" << endl;
-
-		y[i] = trackSpinsDeltaOmegaSteyerl(numTracksPerPoint, runNameString + "_" + TString(i), eY[i]);
-	}
-
-	TCanvas theCanvas("theCanvas", "theCanvas", 1600, 1200);
-	theCanvas.SetLogx();
-
-	TGraphErrors* outGraph = new TGraphErrors(numOmegaSteyerl, x.data(), y.data(), NULL, eY.data());
-	outGraph->SetName(runNameString + "OmegaGraph");
-	outGraph->SetTitle(runNameString + " Geometric Phase Plot");
-	outGraph->GetYaxis()->SetTitle("#frac{#Delta#omega}{#zeta#eta#omega_{0}}");
-	outGraph->GetXaxis()->SetTitle("#omega_{r} / #omega_{0}");
-	outGraph->GetXaxis()->SetLimits(0.01, 100);
-	outGraph->GetXaxis()->SetRangeUser(0.01, 100);
-	outGraph->GetXaxis()->SetNoExponent();
-	//outGraph->GetYaxis()->SetLimits(-3.4999,2);
-	//outGraph->GetYaxis()->SetRangeUser(-3.4999,2);
-
-	outGraph->Draw("APE1");
-	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString + ".png");
-
-	//Eventually I should figure out where to throw this function...
-	ofstream outFile;
-	outFile.open(SRKHISTSDIR + runNameString + ".txt");
-	outFile << TString("#") << outGraph->GetTitle() << ";" << outGraph->GetXaxis()->GetTitle() << ";" << outGraph->GetYaxis()->GetTitle() << endl;
-	for (int i = 0; i < numOmegaSteyerl; i++)
-	{
-
-		outFile.precision(15);
-		outFile << scientific << x[i];
-		outFile << "\t" << scientific << 0;
-		outFile << "\t" << scientific << y[i];
-		outFile << "\t" << scientific << eY[i];
-		if(i != numOmegaSteyerl - 1)
-		{
-			outFile << endl;
-		}
-
-	}
-	outFile.close();
-
-	setTimeLimit(oldTimeLimit);
-
-	delete outGraph;
-}
+//TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd, bool useLog, int approximateReflectionsFixedTime)
+//{
+//	vector<double> x(numOmegaSteyerl);
+//	vector<double> y(numOmegaSteyerl);
+//	vector<double> eY(numOmegaSteyerl);
+//
+//	double oldTimeLimit = getTimeLimit(); //in case we are using approximateRefelectionsFixedTime
+//
+//	double increment;
+//	if(useLog)
+//	{
+//		increment = (log10(OmegaSteyerlEnd) - log10(OmegaSteyerlStart)) / (numOmegaSteyerl - 1);
+//	}
+//	else
+//	{
+//		increment = (OmegaSteyerlEnd - OmegaSteyerlStart) / (numOmegaSteyerl - 1);
+//	}
+//
+//	for (int i = 0; i < numOmegaSteyerl; i++)
+//	{
+//		TString subRunID=runID+"_" + Form("%i",i);
+//		//If we want to emulate a fixed number of reflections but still not bias, we'll use a time limit to get us close to the same reflections
+//
+//		if(useLog)
+//		{
+//			x[i] = pow(10, log10(OmegaSteyerlStart) + increment * i);
+//		}
+//		else
+//		{
+//			x[i] = OmegaSteyerlStart + increment * i;
+//		}
+//		setVelByOmegaSteyerl(x[i]);
+//		if(approximateReflectionsFixedTime > 0)
+//		{
+//			double timeLimit = approximateReflectionsFixedTime * .4 / abs(getMeanVel());
+//			setTimeLimit(timeLimit);
+//		}
+//		cout << " ------------------------------" << endl;
+//		cout << "Set#: " << i << "    Omega = " << x[i] << "    Vel = " << getMeanVel() << endl;
+//		cout << " ------------------------------" << endl;
+//		trackSpinsDeltaOmega(numTracksPerPoint);
+//		double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
+//		y[i] = deltaPhaseMean/zetaEtaOmega0;
+//		eY[i] = deltaPhaseError/zetaEtaOmega0;
+//	}
+//
+//	TCanvas theCanvas("theCanvas", "theCanvas", 1600, 1200);
+//	theCanvas.SetLogx();
+//
+//	TGraphErrors* outGraph = new TGraphErrors(numOmegaSteyerl, x.data(), y.data(), NULL, eY.data());
+//	outGraph->SetName(runNameString + "OmegaGraph");
+//	outGraph->SetTitle(runNameString + " Geometric Phase Plot");
+//	outGraph->GetYaxis()->SetTitle("#frac{#Delta#omega}{#zeta#eta#omega_{0}}");
+//	outGraph->GetXaxis()->SetTitle("#omega_{r} / #omega_{0}");
+//	outGraph->GetXaxis()->SetLimits(0.01, 100);
+//	outGraph->GetXaxis()->SetRangeUser(0.01, 100);
+//	outGraph->GetXaxis()->SetNoExponent();
+//	//outGraph->GetYaxis()->SetLimits(-3.4999,2);
+//	//outGraph->GetYaxis()->SetRangeUser(-3.4999,2);
+//
+//	outGraph->Draw("APE1");
+//	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString + ".png");
+//
+//	//Eventually I should figure out where to throw this function...
+//	ofstream outFile;
+//	outFile.open(SRKHISTSDIR + runNameString + ".txt");
+//	outFile << TString("#") << outGraph->GetTitle() << ";" << outGraph->GetXaxis()->GetTitle() << ";" << outGraph->GetYaxis()->GetTitle() << endl;
+//	for (int i = 0; i < numOmegaSteyerl; i++)
+//	{
+//
+//		outFile.precision(15);
+//		outFile << scientific << x[i];
+//		outFile << "\t" << scientific << 0;
+//		outFile << "\t" << scientific << y[i];
+//		outFile << "\t" << scientific << eY[i];
+//		if(i != numOmegaSteyerl - 1)
+//		{
+//			outFile << endl;
+//		}
+//
+//	}
+//	outFile.close();
+//
+//	setTimeLimit(oldTimeLimit);
+//
+//	return outGraph;
+//}

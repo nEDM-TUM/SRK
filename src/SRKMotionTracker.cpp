@@ -45,6 +45,8 @@ SRKMotionTracker::SRKMotionTracker()
 	currentTime = 0.;
 	lastTrack = false;
 	currentEntry = 0;
+	manualTracking=false;
+	vel.SetXYZ(meanVel,0,0);
 
 }
 
@@ -121,7 +123,7 @@ void SRKMotionTracker::writeTrackToFile()
 bool SRKMotionTracker::loadTrackFile(TString filePath)
 {
 	closeTrackFile(); //Close if already open
-	trackFile->Open(filePath, "READ");
+	trackFile = new TFile(filePath, "READ");
 	if(trackFile->IsZombie() || !trackFile->IsOpen())
 	{
 		cout << "Error opening track file: " << filePath << endl;
@@ -192,14 +194,10 @@ void SRKMotionTracker::makeTracks(int numTracksToAdd)
 
 void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut)
 {
+
 	//Begin with random points
 	posOut = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
 	velOut = getRandomDirection();
-//	posOut=TVector3();
-//	velOut=TVector3(1,0,0);
-
-	//pos.Print();
-	//vel.Print();
 
 	if(use2D)
 	{
@@ -217,7 +215,10 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 
 	currentTime = 0;
 
-	getRandomDirectionAndPointInCylinder(pos, vel);
+	if(!manualTracking)
+	{
+		getRandomDirectionAndPointInCylinder(pos, vel);
+	}
 
 	trackTree->Fill(); //Record initial point
 
@@ -233,6 +234,14 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 
 		getNextTrackingPoint(pos, vel, currentTime);
 		trackTree->Fill();
+
+	}
+
+	if(currentTime < 1.01)
+	{
+		cout << "what the" << endl;
+		pos.Print();
+		vel.Print();
 	}
 
 	return;
@@ -302,6 +311,7 @@ double SRKMotionTracker::getNextReflection(TVector3 pos0, TVector3 vel0, TVector
 
 	velOut = getReflectedVector(diffuseReflectionProb, vel0, norm);
 	velOut.SetMag(vel0.Mag());
+
 	return minTime;
 
 }
