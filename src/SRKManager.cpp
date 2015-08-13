@@ -73,12 +73,59 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 void SRKManager::closeResultsFile()
 {
+	TList parameterList;
+
+	parameterList.Add(new TNamed("RecordAllSteps", Form("%i", (int) getRecordAllSteps())));
+	parameterList.Add(new TNamed("UseAltStepping", Form("%i", (int) getUseAltStepping())));
+	parameterList.Add(new TNamed("ParallelFields", Form("%i", (int) getParallelFields())));
+	parameterList.Add(new TNamed("ConstStepper", Form("%i", (int) getConstStepper())));
+	parameterList.Add(new TNamed("Use2D", Form("%i", (int) getUse2D())));
+	parameterList.Add(new TNamed("ManualTracking", Form("%i", (int) getManualTracking())));
+	parameterList.Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
+	parameterList.Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
+	parameterList.Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
+	parameterList.Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));
+	parameterList.Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
+	parameterList.Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
+	parameterList.Add(new TNamed(TString("RunID"), getRunID()));
+	parameterList.Add(new TNamed("PhaseMean", Form("%e", getPhaseMean())));
+	parameterList.Add(new TNamed("PhaseError", Form("%e", getPhaseError())));
+	parameterList.Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
+	parameterList.Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
+	parameterList.Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
+	parameterList.Add(new TNamed("DiffuseReflectionProb", Form("%e", getDiffuseReflectionProb())));
+	parameterList.Add(new TNamed("ChamberRadius", Form("%e", getChamberRadius())));
+	parameterList.Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
+	parameterList.Add(new TNamed("MeanVel", Form("%e", getMeanVel())));
+	parameterList.Add(new TNamed("ReflectionLimit", Form("%i", getReflectionLimit())));
+
+	parameterList.Add(new TNamed("Pos", Form("%f %f %f", getPos().X(), getPos().Y(), getPos().Z())));
+	parameterList.Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
+	parameterList.Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
+	parameterList.Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
+
+	double eps_abs, eps_rel;
+	getPerStepError(eps_abs, eps_rel);
+	parameterList.Add(new TNamed("PerStepError", Form("%f %f", eps_abs, eps_rel)));
+
+
+
+
+	TList* userInfoList=hitTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
+	userInfoList->AddAll(&parameterList);
 	resultsFile->Write("", TObject::kOverwrite);
 
 	resultsFile->Close();
 	delete resultsFile;
 	resultsFile = NULL;
 	hitTree = NULL;
+
+// Apparently when we write ROOT handles this?
+//	while(parameterList.GetSize() > 0)
+//	{
+//		delete parameterList.First();
+//		parameterList.Pop();
+//	}
 }
 
 void SRKManager::writeEvent()
@@ -96,6 +143,7 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 	}
 
 }
+
 
 bool SRKManager::trackSpins(int numTracks)
 {

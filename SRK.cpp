@@ -10,11 +10,16 @@
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TStyle.h"
+#include "TParameter.h"
+#include "TFile.h"
+#include "TROOT.h"
+#include "TObjString.h"
 
 #include "SRKManager.h"
 #include "SRKMacroManager.h"
 #include "SRKMotionTracker.h"
 #include "SRKGraphics.h"
+#include "TMap.h"
 
 using namespace std;
 
@@ -376,6 +381,7 @@ int main(int argc, char* argv[])
 //	theManager.setPos(TVector3(0,0,-0.05));
 //	theManager.trackSpins(1,"",SRKRESULTSDIR+"test.root");
 
+	/*Command Line Execution*/
 	if(argc >2)
 	{
 		cout << "Error! SRK only accepts 0 or 1 arguments." << endl;
@@ -396,6 +402,7 @@ int main(int argc, char* argv[])
 	{
 		theMacroManager.enterInteractiveMode();
 	}
+
 
 	return 0;
 }

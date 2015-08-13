@@ -43,6 +43,8 @@ public:
 	inline TVector3 getPos(){return pos;}
 	inline TVector3 getVel(){return vel;}
 	inline bool getManualTracking(){return manualTracking;}
+	inline int getReflectionLimit(){return reflectionLimit;}
+	inline bool getUse2D(){return use2D;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}

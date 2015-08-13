@@ -8,6 +8,7 @@
 
 #include "TString.h"
 #include "TGraphErrors.h"
+#include "TList.h"
 
 const TString SRKRESULTSDIR = "/home/mjbales/work/nedm/results/";
 const TString SRKHISTSDIR = "/home/mjbales/work/nedm/hists/";
@@ -27,23 +28,61 @@ public:
 
 	//Getters
 	inline bool getRecordAllSteps(){return recordAllSteps;}
+	inline bool getUseAltStepping(){ return useAltStepping;}
+	inline bool getParallelFields(){ return parallelFields;}
+	inline double getB0FieldStrength(){ return b0FieldStrength;}
+	inline double getE0FieldStrength(){ return e0FieldStrength;}
+	inline double getBGradFieldStrength(){ return bGradFieldStrength;}
+	inline double getDipoleFieldStrength(){ return dipoleFieldStrength;}
+	inline TVector3 getDipolePosition(){ return dipolePosition;}
+	inline TVector3 getDipoleDirection(){ return dipoleDirection;}
+	inline TString getTrackFilePath() { return trackFilePath;}
+	inline TString getResultsFilePath() { return resultsFilePath;}
+	inline TString getRunID() { return runID;}
 	inline double getPhaseMean(){return phaseMean;}
 	inline double getPhaseError(){return phaseError;}
+
 	inline double getGyromagneticRatio(){return theSpinTracker->getGyromagneticRatio();}
+	inline int getStepsTaken(){return theSpinTracker->getStepsTaken();}
+	inline void getPerStepError(double& inp_eps_abs, double& inp_eps_rel){return theSpinTracker->getPerStepError(inp_eps_abs,inp_eps_rel);}
+	inline bool getConstStepper(){return theSpinTracker->getConstStepper();}
+
 	inline double getTimeLimit(){return theMotionTracker->getTimeLimit();}
 	inline double getDiffuseReflectionProb(){return theMotionTracker->getDiffuseReflectionProb();}
 	inline double getChamberRadius(){return theMotionTracker->getChamberRadius();}
 	inline double getChamberHeight(){return theMotionTracker->getChamberHeight();}
 	inline double getMeanVel(){return theMotionTracker->getMeanVel();}
+	inline int getReflectionLimit(){return theMotionTracker->getReflectionLimit();}
+	inline bool getUse2D(){return theMotionTracker->getUse2D();}
+	inline bool getManualTracking(){return theMotionTracker->getManualTracking();}
+	inline TVector3 getPos(){return theMotionTracker->getPos();}
+	inline TVector3 getVel(){return theMotionTracker->getVel();}
+
 	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
 	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
 	inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
-	inline int getStepsTaken(){return theSpinTracker->getStepsTaken();}
+
+
+
 	//Setters
 	inline void setRecordAllSteps(bool inp){recordAllSteps=inp;}
 	inline void setUseAltStepping(bool inp){useAltStepping=inp;}
 	inline void setParallelFields(bool inp){parallelFields=inp;}
+	inline void setB0FieldStrength(double inp){b0FieldStrength=inp;}
+	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
+	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
+	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
+	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
+	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
+	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
+	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
+	inline void setRunID(TString inp) {runID=inp;}
+
 	inline void setGyromagneticRatio(double inp){theSpinTracker->setGyromagneticRatio(inp);}
+	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel=0){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
+	inline void setInitialStepSize(double inp){theSpinTracker->setInitialStepSize(inp);}
+	inline void setConstStepper(bool inp){theSpinTracker->setConstStepper(inp);}
+
 	inline void setTimeLimit(double inp){theMotionTracker->setTimeLimit(inp);}
 	inline void setDiffuseReflectionProb(double inp){theMotionTracker->setDiffuseReflectionProb(inp);}
 	inline void setMeanVel(double inp){theMotionTracker->setMeanVel(inp);}
@@ -52,21 +91,11 @@ public:
 	inline void setChamberRadius(double inp){theMotionTracker->setChamberRadius(inp);}
 	inline void setChamberHeight(double inp){theMotionTracker->setChamberHeight(inp);}
 	inline void setVelByOmegaSteyerl(double OmegaSteyerl){theMotionTracker->setMeanVel(fabs(OmegaSteyerl*getGyromagneticRatio()*b0FieldStrength*getChamberRadius()));}
-	inline void setB0FieldStrength(double inp){b0FieldStrength=inp;}
-	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
-	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
-	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
-	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
-	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
+	inline void setManualTracking(bool inp){ theMotionTracker->setManualTracking(inp);}
 	inline void setPos(const TVector3& inp){ theMotionTracker->setPos(inp);}
 	inline void setVel(const TVector3& inp){ theMotionTracker->setVel(inp);}
-	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel=0){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
-	inline void setInitialStepSize(double inp){theSpinTracker->setInitialStepSize(inp);}
-	inline void setConstStepper(bool inp){theSpinTracker->setConstStepper(inp);}
-	inline void setManualTracking(bool inp){ theMotionTracker->setManualTracking(inp);}
-	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
-	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
-	inline void setRunID(TString inp) {runID=inp;}
+
+
 
 protected:
 	void createResultsFile(TString resultsFilePath);
