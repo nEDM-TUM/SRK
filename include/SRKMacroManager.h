@@ -15,7 +15,6 @@ class SRKMacroManager
 public:
 	SRKMacroManager(SRKManager* inpManager);
 	virtual ~SRKMacroManager();
-	bool insertMacroFile(TString filePath);
 	bool openMacroFile(TString filePath);
 	void runMacroCommands(); //From commmandString/ValueList
 	bool runMacroCommand(std::string command, std::string value);

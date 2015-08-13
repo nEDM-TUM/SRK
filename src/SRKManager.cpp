@@ -88,8 +88,6 @@ void SRKManager::closeResultsFile()
 	parameterList.Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
 	parameterList.Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
 	parameterList.Add(new TNamed(TString("RunID"), getRunID()));
-	parameterList.Add(new TNamed("PhaseMean", Form("%e", getPhaseMean())));
-	parameterList.Add(new TNamed("PhaseError", Form("%e", getPhaseError())));
 	parameterList.Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
 	parameterList.Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
 	parameterList.Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));

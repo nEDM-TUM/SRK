@@ -61,6 +61,8 @@ void SRKMacroManager::runMacroCommands()
 
 		TString command = commandStringList.front();
 		TString value = commandValueStringList.front();
+		commandStringList.pop_front();
+		commandValueStringList.pop_front();
 
 		cout << "SRK: " << command << " " << value << endl;
 		if(!runMacroCommand(command.Data(), value.Data()))
@@ -68,8 +70,7 @@ void SRKMacroManager::runMacroCommands()
 			break;  //Break if there is a command issue;
 		}
 
-		commandStringList.pop_front();
-		commandValueStringList.pop_front();
+
 
 	}
 }
@@ -210,8 +211,9 @@ void SRKMacroManager::defineCommands()
 	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
 	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};
 	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
+	commandMap["setRunID"] = [&](string inp)	{	theManager->setRunID(inp);};
 	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
 	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};
-	commandMap["runMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
+	commandMap["openMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
 
 }
