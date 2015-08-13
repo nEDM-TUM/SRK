@@ -211,6 +211,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
 	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};
 	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
+	commandMap["setDefaultResultsDir"] = [&](string inp)	{	theManager->setDefaultResultsDir(inp);};
 	commandMap["setRunID"] = [&](string inp)	{	theManager->setRunID(inp);};
 	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
 	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};

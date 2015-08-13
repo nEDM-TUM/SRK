@@ -28,7 +28,8 @@ SRKManager::SRKManager()
 	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
-	resultsFilePath = SRKRESULTSDIR + "test.root";
+	defaultResultsDir="/home/mjbales/work/nedm/results/"; //only when resultsFilePath is not appropriate
+	resultsFilePath = defaultResultsDir + "test.root";
 	runID="RIDX";
 }
 
@@ -331,8 +332,8 @@ void SRKManager::loadFields()
 void SRKManager::calcDeltaPhaseMean(TString inpRunID)
 {
 	double parMean,parError,antiMean,antiError;
-	parMean=makeMeanPhasePlot(SRKRESULTSDIR+"Results_"+inpRunID+"_P.root", "", true, parError); //Prints mean and stdev, no plot
-	antiMean=makeMeanPhasePlot(SRKRESULTSDIR+"Results_"+inpRunID+"_A.root", "", true, antiError);//Prints mean and stdev, no plot
+	parMean=makeMeanPhasePlot(defaultResultsDir+"Results_"+inpRunID+"_P.root", "", true, parError); //Prints mean and stdev, no plot
+	antiMean=makeMeanPhasePlot(defaultResultsDir+"Results_"+inpRunID+"_A.root", "", true, antiError);//Prints mean and stdev, no plot
 	deltaPhaseMean = parMean - antiMean;
 	deltaPhaseError = sqrt(parError * parError + antiError * antiError);
 
@@ -342,13 +343,13 @@ void SRKManager::trackSpinsDeltaOmega(int numTracks)
 {
 	//Run Parallel
 	setParallelFields(true);
-	resultsFilePath = SRKRESULTSDIR + "Results_" + runID + "_P.root";
+	resultsFilePath = defaultResultsDir + "Results_" + runID + "_P.root";
 	trackSpins(numTracks);
 
 
 	//Run Anti-Parallel
 	setParallelFields(false);
-	resultsFilePath = SRKRESULTSDIR + "Results_" + runID + "_A.root";
+	resultsFilePath = defaultResultsDir + "Results_" + runID + "_A.root";
 	trackSpins(numTracks);
 
 	calcDeltaPhaseMean(runID);

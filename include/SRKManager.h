@@ -10,7 +10,6 @@
 #include "TGraphErrors.h"
 #include "TList.h"
 
-const TString SRKRESULTSDIR = "/home/mjbales/work/nedm/results/";
 const TString SRKHISTSDIR = "/home/mjbales/work/nedm/hists/";
 const TString SRKGRAPHSDIR = "/home/mjbales/work/nedm/graphs/";
 const TString SRKTRACKSDIR = "/home/mjbales/work/nedm/tracks/";
@@ -76,6 +75,7 @@ public:
 	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
 	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
 	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
+	inline void setDefaultResultsDir(TString inp) {defaultResultsDir=inp;}
 	inline void setRunID(TString inp) {runID=inp;}
 
 	inline void setGyromagneticRatio(double inp){theSpinTracker->setGyromagneticRatio(inp);}
@@ -120,6 +120,7 @@ protected:
 
 	TString trackFilePath;
 	TString resultsFilePath;
+	TString defaultResultsDir;
 	TString runID;
 
 	TFile* resultsFile;
