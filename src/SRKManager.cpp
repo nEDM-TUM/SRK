@@ -74,7 +74,6 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 void SRKManager::closeResultsFile()
 {
-//	TList parameterList;
 
 	TList* userInfoList=hitTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
 
@@ -109,21 +108,12 @@ void SRKManager::closeResultsFile()
 	getPerStepError(eps_abs, eps_rel);
 	userInfoList->Add(new TNamed("PerStepError", Form("%f %f", eps_abs, eps_rel)));
 
-
-//	userInfoList->AddAll(&parameterList);
 	resultsFile->Write("", TObject::kOverwrite);
 
 	resultsFile->Close();
 	delete resultsFile;
 	resultsFile = NULL;
 	hitTree = NULL;
-
-// Apparently when we write ROOT handles this?
-//	while(parameterList.GetSize() > 0)
-//	{
-//		delete parameterList.First();
-//		parameterList.Pop();
-//	}
 }
 
 void SRKManager::writeEvent()
