@@ -39,7 +39,7 @@ bool SRKMacroManager::openMacroFile(TString filePath)
 		theFile >> commandString;
 		theFile.ignore(1);
 		commandValueString.ReadLine(theFile); //rest is value
-		cout << "Grabbed: " << commandString << "  and value: " << commandValueString << endl;
+		//cout << "Grabbed: " << commandString << "  and value: " << commandValueString << endl;
 
 		fileCommandStringList.push_back(commandString);
 		fileCommandValueStringList.push_back(commandValueString);

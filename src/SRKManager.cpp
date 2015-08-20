@@ -74,44 +74,43 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 void SRKManager::closeResultsFile()
 {
-	TList parameterList;
+//	TList parameterList;
 
-	parameterList.Add(new TNamed("RecordAllSteps", Form("%i", (int) getRecordAllSteps())));
-	parameterList.Add(new TNamed("UseAltStepping", Form("%i", (int) getUseAltStepping())));
-	parameterList.Add(new TNamed("ParallelFields", Form("%i", (int) getParallelFields())));
-	parameterList.Add(new TNamed("ConstStepper", Form("%i", (int) getConstStepper())));
-	parameterList.Add(new TNamed("Use2D", Form("%i", (int) getUse2D())));
-	parameterList.Add(new TNamed("ManualTracking", Form("%i", (int) getManualTracking())));
-	parameterList.Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
-	parameterList.Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
-	parameterList.Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
-	parameterList.Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));
-	parameterList.Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
-	parameterList.Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
-	parameterList.Add(new TNamed(TString("RunID"), getRunID()));
-	parameterList.Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
-	parameterList.Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
-	parameterList.Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
-	parameterList.Add(new TNamed("DiffuseReflectionProb", Form("%e", getDiffuseReflectionProb())));
-	parameterList.Add(new TNamed("ChamberRadius", Form("%e", getChamberRadius())));
-	parameterList.Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
-	parameterList.Add(new TNamed("MeanVel", Form("%e", getMeanVel())));
-	parameterList.Add(new TNamed("ReflectionLimit", Form("%i", getReflectionLimit())));
+	TList* userInfoList=hitTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
 
-	parameterList.Add(new TNamed("Pos", Form("%f %f %f", getPos().X(), getPos().Y(), getPos().Z())));
-	parameterList.Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
-	parameterList.Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
-	parameterList.Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
+	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) getRecordAllSteps())));
+	userInfoList->Add(new TNamed("UseAltStepping", Form("%i", (int) getUseAltStepping())));
+	userInfoList->Add(new TNamed("ParallelFields", Form("%i", (int) getParallelFields())));
+	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) getConstStepper())));
+	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) getUse2D())));
+	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) getManualTracking())));
+	userInfoList->Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
+	userInfoList->Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
+	userInfoList->Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
+	userInfoList->Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));
+	userInfoList->Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
+	userInfoList->Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
+	userInfoList->Add(new TNamed(TString("RunID"), getRunID()));
+	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
+	userInfoList->Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
+	userInfoList->Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
+	userInfoList->Add(new TNamed("DiffuseReflectionProb", Form("%e", getDiffuseReflectionProb())));
+	userInfoList->Add(new TNamed("ChamberRadius", Form("%e", getChamberRadius())));
+	userInfoList->Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
+	userInfoList->Add(new TNamed("MeanVel", Form("%e", getMeanVel())));
+	userInfoList->Add(new TNamed("ReflectionLimit", Form("%i", getReflectionLimit())));
+
+	userInfoList->Add(new TNamed("Pos", Form("%f %f %f", getPos().X(), getPos().Y(), getPos().Z())));
+	userInfoList->Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
+	userInfoList->Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
+	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
 
 	double eps_abs, eps_rel;
 	getPerStepError(eps_abs, eps_rel);
-	parameterList.Add(new TNamed("PerStepError", Form("%f %f", eps_abs, eps_rel)));
+	userInfoList->Add(new TNamed("PerStepError", Form("%f %f", eps_abs, eps_rel)));
 
 
-
-
-	TList* userInfoList=hitTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
-	userInfoList->AddAll(&parameterList);
+//	userInfoList->AddAll(&parameterList);
 	resultsFile->Write("", TObject::kOverwrite);
 
 	resultsFile->Close();
@@ -361,8 +360,12 @@ void SRKManager::trackSpinsDeltaOmega(int numTracks)
 	double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
 	cout << "False EDM [e cm]: " << scientific << setprecision(5) << deltaOmega*scaleFactor << " +/- " << deltaOmegaError*scaleFactor << endl;
 	double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
-	cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << deltaOmega/zetaEtaOmega0 << " +/- " << deltaOmegaError/zetaEtaOmega0 << endl;
-	cout.unsetf(ios_base::floatfield);
+
+	if(bGradFieldStrength > 0)
+	{
+		cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << deltaOmega/zetaEtaOmega0 << " +/- " << deltaOmegaError/zetaEtaOmega0 << endl;
+		cout.unsetf(ios_base::floatfield);
+	}
 
 }
 
