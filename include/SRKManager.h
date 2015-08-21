@@ -15,6 +15,36 @@ const TString SRKGRAPHSDIR = "/home/mjbales/work/nedm/graphs/";
 const TString SRKTRACKSDIR = "/home/mjbales/work/nedm/tracks/";
 const TString SRKMACROSDIR = "/home/mjbales/work/nedm/macros/";
 
+struct SRKRunStats
+{
+	SRKRunStats():
+		numEvents(0),
+		phiMean(0.),phiError(0.), phiStDev(0.), phiKurtosis(0.),phiKurtosisError(0), phiSkewness(0.), phiSkewnessError(0.), phiTsallisPower(0.), phiTsallisPowerError(0.),
+		thetaMean(0.),thetaError(0.), thetaStDev(0.), thetaKurtosis(0.),thetaKurtosisError(0), thetaSkewness(0.), thetaSkewnessError(0.), thetaTsallisPower(0.), thetaTsallisPowerError(0.) { }
+	int numEvents;
+
+	double phiMean;
+	double phiError;
+	double phiStDev;
+	double phiKurtosis;
+	double phiKurtosisError;
+	double phiSkewness;
+	double phiSkewnessError;
+	double phiTsallisPower;
+	double phiTsallisPowerError;
+
+	double thetaMean;
+	double thetaError;
+	double thetaStDev;
+	double thetaKurtosis;
+	double thetaKurtosisError;
+	double thetaSkewness;
+	double thetaSkewnessError;
+	double thetaTsallisPower;
+	double thetaTsallisPowerError;
+
+};
+
 class SRKManager
 {
 public:
@@ -23,6 +53,8 @@ public:
 
 	bool trackSpins(int numTracks);
 	void trackSpinsDeltaOmega(int numTracks);
+	void loadParametersFromResultsFile(TString filePath);
+	void outputDataForRIDs(TString rangeString); //Format of int int
 	//TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
 
 	//Getters
@@ -106,6 +138,8 @@ protected:
 	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);
 	void loadFields();
 	void calcDeltaPhaseMean(TString inpRunID);
+	SRKRunStats calcResultsFileStats(TString filePath, bool useWrapping);
+	bool fileExists(TString filePath);
 
 
 	TVector3 pos0, pos, vel0, vel; //For recording

@@ -4,8 +4,11 @@
 #include <iostream>
 #include <time.h>
 #include <iomanip>
+#include <string>
 
 #include "SRKGraphics.h"
+#include "SRKMacroManager.h"
+#include "TF1.h"
 
 using namespace std;
 
@@ -98,7 +101,6 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
 	userInfoList->Add(new TNamed("MeanVel", Form("%e", getMeanVel())));
 	userInfoList->Add(new TNamed("ReflectionLimit", Form("%i", getReflectionLimit())));
-
 	userInfoList->Add(new TNamed("Pos", Form("%f %f %f", getPos().X(), getPos().Y(), getPos().Z())));
 	userInfoList->Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
 	userInfoList->Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
@@ -116,10 +118,32 @@ void SRKManager::closeResultsFile()
 	hitTree = NULL;
 }
 
+void SRKManager::loadParametersFromResultsFile(TString filePath)
+{
+	TFile theFile(filePath,"READ");
+	TTree* theTree = (TTree*) theFile.Get("hitTree");
+	TList* userInfoList=theTree->GetUserInfo();
+	SRKMacroManager tempManager(this);
+
+	for(int i=0;i<userInfoList->GetEntries();i++)
+	{
+		TNamed* par=(TNamed*) userInfoList->At(i);
+		string command=string("set")+par->GetName();
+		string value = par->GetTitle();
+		if(command != "setStepsTaken" && command != "setPerStepError")
+		{
+			cout << "SRK: " << command << " " << value << endl;
+			tempManager.runMacroCommand(command,value);
+		}
+	}
+	theFile.Close();
+}
+
 void SRKManager::writeEvent()
 {
 	hitTree->Fill();
 }
+
 
 void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
 {
@@ -328,6 +352,144 @@ void SRKManager::calcDeltaPhaseMean(TString inpRunID)
 
 }
 
+SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
+{
+	SRKRunStats theStats;
+
+	TFile* rootFile = new TFile(filePath);
+
+	double phi, theta;
+	TTree* theTree = (TTree*) rootFile->Get("hitTree");
+	theTree->SetMakeClass(1);
+	theTree->SetBranchAddress("phi", &(phi));
+	theTree->SetBranchAddress("theta", &(theta));
+
+	gROOT->cd(0);
+
+	theStats.numEvents = theTree->GetEntries();
+
+	vector<double> phiVec;
+	vector<double> thetaVec;
+
+	for (int i = 0; i < theStats.numEvents; i++)
+	{
+
+		theTree->GetEntry(i, 1);
+
+		phiVec.push_back(phi);
+		thetaVec.push_back(phi);
+
+	}
+	rootFile->Close();
+	delete rootFile;
+
+	if(useWrapping)
+	{
+		theStats.phiMean = reducePeriodicToMeanInVector(phiVec);
+		theStats.thetaMean = reducePeriodicToMeanInVector(thetaVec);
+	}
+	else
+	{
+		theStats.phiMean = carefulMeanVector(phiVec);
+		theStats.thetaMean = carefulMeanVector(thetaVec);
+	}
+
+	theStats.phiStDev = carefullStDevVector(phiVec, true);
+	theStats.thetaStDev = carefullStDevVector(thetaVec, true);
+
+	theStats.phiError = theStats.phiStDev / sqrt((double) theStats.numEvents);
+	theStats.thetaError = theStats.thetaStDev / sqrt((double) theStats.numEvents);
+
+	TH1D phiHist("phiHist", "phiHist", 10000, theStats.phiMean - TMath::Pi(), theStats.phiMean + TMath::Pi());
+	TH1D thetaHist("phiHist", "phiHist", 10000, TMath::Pi(), TMath::Pi());
+
+	for (int i = 0; i < theStats.numEvents; ++i)
+	{
+		phiHist.Fill(phiVec[i]);
+		thetaHist.Fill(thetaVec[i]);
+	}
+
+	theStats.phiKurtosis = phiHist.GetKurtosis(1);
+	theStats.phiKurtosisError = phiHist.GetKurtosis(11);
+	theStats.phiSkewness = phiHist.GetSkewness(1);
+	theStats.phiSkewnessError = phiHist.GetSkewness(11);
+
+	theStats.thetaKurtosis = thetaHist.GetKurtosis(1);
+	theStats.thetaKurtosisError = thetaHist.GetKurtosis(11);
+	theStats.thetaSkewness = thetaHist.GetSkewness(1);
+	theStats.thetaSkewnessError = thetaHist.GetSkewness(11);
+
+	TF1 phiTsallisFunc("phiTsallisFunc", "[0]/pow(1+((x-[3])/[1])*((x-[3])/[1]),[2])", theStats.phiMean - TMath::Pi(), theStats.phiMean + TMath::Pi());
+	phiTsallisFunc.SetParNames("Amplitude", "Sigma", "Power", "Mean");
+	phiTsallisFunc.SetParameters(phiHist.GetMaximum() * 5, theStats.phiStDev * 0.005, .76, theStats.phiMean);
+	phiTsallisFunc.SetParLimits(3, theStats.phiMean, theStats.phiMean);
+	phiHist.Fit(&phiTsallisFunc, "VMR+");
+	theStats.phiTsallisPower = phiTsallisFunc.GetParameter(2);
+	theStats.phiTsallisPowerError = phiTsallisFunc.GetParError(2);
+
+	TF1 thetaTsallisFunc("thetaTsallisFunc", "[0]/pow(1+((x-[3])/[1])*((x-[3])/[1]),[2])", theStats.thetaMean - TMath::Pi(), theStats.thetaMean + TMath::Pi());
+	thetaTsallisFunc.SetParNames("Amplitude", "Sigma", "Power", "Mean");
+	thetaTsallisFunc.SetParameters(thetaHist.GetMaximum() * 5, theStats.thetaStDev * 0.005, .76, theStats.thetaMean);
+	thetaTsallisFunc.SetParLimits(3, theStats.thetaMean, theStats.thetaMean);
+	thetaHist.Fit(&thetaTsallisFunc, "VMR+");
+	theStats.thetaTsallisPower = thetaTsallisFunc.GetParameter(2);
+	theStats.thetaTsallisPowerError = thetaTsallisFunc.GetParError(2);
+
+
+	return theStats;
+}
+
+void SRKManager::outputDataForRIDs(TString rangeString)  //Format of int int
+{
+	stringstream theStringStream(rangeString.Data());
+	int startRID, finalRID;
+	theStringStream >> startRID >> finalRID;
+
+	TString outFilePath = defaultResultsDir + Form("Data_RID%i_RID%i.txt", startRID, finalRID);
+	ofstream outFile(outFilePath.Data());
+
+	outFile << "#RunID\tNumEvents\tDeltaOmega\tDeltaOmegaError\tFalseEDM\tFalseEDMError";
+	outFile << "\tphiStDev\tphiStDevError\tphiKurtosis\tphiKurtosisError\tphiSkewness\tphiSkewnessError\tphiTsallisPower\tPhiTsallisPowerError";
+	outFile << "\tthetaStDev\tthetaStDevError\tthetaKurtosis\tthetaKurtosisError\tthetaSkewness\tthetaSkewnessError\tthetaTsallisPower\tthetaTsallisPowerError" << endl;
+
+	for (int i = startRID; i < finalRID + 1; i++)
+	{
+		TString pFilePath = defaultResultsDir + Form("Results_RID%i_P.root", i);
+		TString aFilePath = defaultResultsDir + Form("Results_RID%i_A.root", i);
+		if(fileExists(pFilePath) && fileExists(aFilePath))
+		{
+
+			loadParametersFromResultsFile(defaultResultsDir + Form("Results_RID%i_P.root", i));
+
+			SRKRunStats parStats = calcResultsFileStats(pFilePath, true);
+			SRKRunStats antiStats = calcResultsFileStats(aFilePath, true);
+			double deltaPhaseMean = parStats.phiMean - antiStats.phiMean;
+			double deltaPhaseError = sqrt(parStats.phiError * parStats.phiError + antiStats.phiError * antiStats.phiError);
+			double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
+			double deltaOmega = deltaPhaseMean / getTimeLimit();
+			double deltaOmegaError = deltaPhaseError / getTimeLimit();
+
+			outFile << i << "\t" << parStats.numEvents << "\t" << deltaOmega << "\t" << deltaOmegaError << "\t" << deltaOmega * scaleFactor << "\t" << deltaOmegaError * scaleFactor;
+			outFile << "\t" << parStats.phiStDev << "\t" << parStats.phiError << "\t" << parStats.phiKurtosis << "\t" << parStats.phiKurtosisError << "\t" << parStats.phiSkewness << "\t" << parStats.phiSkewnessError << "\t"
+				<< parStats.phiTsallisPower << "\t" << parStats.phiTsallisPowerError;
+			outFile << "\t" << parStats.thetaStDev << "\t" << parStats.thetaError << "\t" << parStats.thetaKurtosis << "\t" << parStats.thetaKurtosisError << "\t" << parStats.thetaSkewness << "\t" << parStats.thetaSkewnessError << "\t"
+				<< parStats.thetaTsallisPower << "\t" << parStats.thetaTsallisPowerError;
+		}
+		else  //File does not exist
+		{
+			cout << "Cannot find one or both files for RID" << i <<"!" << endl;
+			outFile << i;
+		}
+		if(i < finalRID)
+		{
+			outFile << endl;
+		}
+	}
+
+	outFile.close();
+
+}
+
 void SRKManager::trackSpinsDeltaOmega(int numTracks)
 {
 	//Run Parallel
@@ -357,6 +519,12 @@ void SRKManager::trackSpinsDeltaOmega(int numTracks)
 		cout.unsetf(ios_base::floatfield);
 	}
 
+}
+
+bool SRKManager::fileExists(TString strFileName)
+{
+	struct stat stFileInfo;
+	return stat(strFileName.Data(), &stFileInfo) == 0;
 }
 
 //TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd, bool useLog, int approximateReflectionsFixedTime)

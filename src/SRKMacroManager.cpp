@@ -216,5 +216,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
 	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};
 	commandMap["openMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
+	commandMap["loadParametersFromResultsFile"] = [&](string inp)	{	theManager->loadParametersFromResultsFile(inp);};
+	commandMap["outputDataForRIDs"] = [&](string inp)	{	theManager->outputDataForRIDs(inp);};
 
 }
