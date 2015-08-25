@@ -29,7 +29,7 @@ SRKMotionTracker::SRKMotionTracker()
 	trackFile = NULL;
 	trackTree = NULL;
 	reflectionLimit = 1000000;
-	use2D = true;
+	use2D = false;
 	useGravity = false;
 	mass = 3.30e-025; //Hg mass kg
 	meanVel = 193; //in m/s

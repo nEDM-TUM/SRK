@@ -59,7 +59,6 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 
 	}
 	resultsFile->cd();
-
 	hitTree = new TTree("hitTree", "Initial and final states after reflections and spin tracking");
 	hitTree->Branch("trackID", &trackID, "trackID/I");
 	hitTree->Branch("time0", &time0, "time0/D");
@@ -377,7 +376,7 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 		theTree->GetEntry(i, 1);
 
 		phiVec.push_back(phi);
-		thetaVec.push_back(phi);
+		thetaVec.push_back(theta);
 
 	}
 	rootFile->Close();
