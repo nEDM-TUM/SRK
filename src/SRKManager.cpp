@@ -399,14 +399,18 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 	theStats.phiError = theStats.phiStDev / sqrt((double) theStats.numEvents);
 	theStats.thetaError = theStats.thetaStDev / sqrt((double) theStats.numEvents);
 
-	TH1D phiHist("phiHist", "phiHist", 10000, theStats.phiMean - TMath::Pi(), theStats.phiMean + TMath::Pi());
-	TH1D thetaHist("phiHist", "phiHist", 10000, TMath::Pi(), TMath::Pi());
+	TH1D phiHist("phiHist", "phiHist", 10000, theStats.phiMean - theStats.phiStDev*5., theStats.phiMean + theStats.phiStDev*5.);
+	TH1D thetaHist("thetaHist", "thetaHist", 10000,-theStats.thetaStDev*5., theStats.thetaStDev*5.);
 
 	for (int i = 0; i < theStats.numEvents; ++i)
 	{
 		phiHist.Fill(phiVec[i]);
 		thetaHist.Fill(thetaVec[i]);
+
+		theStats.sZDetProb += calculateSzDetectionProbability(phiVec[i]-theStats.phiMean,thetaVec[i]);
 	}
+
+	theStats.sZDetProb /= theStats.numEvents;
 
 	theStats.phiKurtosis = phiHist.GetKurtosis(1);
 	theStats.phiKurtosisError = phiHist.GetKurtosis(11);
@@ -449,13 +453,15 @@ void SRKManager::outputDataForRIDs(TString rangeString)  //Format of int int
 
 	outFile << "#RunID\tNumEvents\tDeltaOmega\tDeltaOmegaError\tFalseEDM\tFalseEDMError";
 	outFile << "\tphiStDev\tphiStDevError\tphiKurtosis\tphiKurtosisError\tphiSkewness\tphiSkewnessError\tphiTsallisPower\tPhiTsallisPowerError";
-	outFile << "\tthetaStDev\tthetaStDevError\tthetaKurtosis\tthetaKurtosisError\tthetaSkewness\tthetaSkewnessError\tthetaTsallisPower\tthetaTsallisPowerError" << endl;
+	outFile << "\tthetaStDev\tthetaStDevError\tthetaKurtosis\tthetaKurtosisError\tthetaSkewness\tthetaSkewnessError\tthetaTsallisPower\tthetaTsallisPowerError";
+	outFile << "\tsZDetProb\tsZDetProbError";
+	outFile << endl;
 
 	for (int i = startRID; i < finalRID + 1; i++)
 	{
 		TString pFilePath = defaultResultsDir + Form("Results_RID%i_P.root", i);
 		TString aFilePath = defaultResultsDir + Form("Results_RID%i_A.root", i);
-		if(fileExists(pFilePath) && fileExists(aFilePath))
+		if(fileExistsAndNotZombie(pFilePath) && fileExistsAndNotZombie(aFilePath))
 		{
 
 			loadParametersFromResultsFile(defaultResultsDir + Form("Results_RID%i_P.root", i));
@@ -473,6 +479,7 @@ void SRKManager::outputDataForRIDs(TString rangeString)  //Format of int int
 				<< parStats.phiTsallisPower << "\t" << parStats.phiTsallisPowerError;
 			outFile << "\t" << parStats.thetaStDev << "\t" << parStats.thetaError << "\t" << parStats.thetaKurtosis << "\t" << parStats.thetaKurtosisError << "\t" << parStats.thetaSkewness << "\t" << parStats.thetaSkewnessError << "\t"
 				<< parStats.thetaTsallisPower << "\t" << parStats.thetaTsallisPowerError;
+			outFile << "\t" << parStats.sZDetProb << "\t" << parStats.sZDetProb / sqrt(parStats.numEvents);
 		}
 		else  //File does not exist
 		{
@@ -520,96 +527,34 @@ void SRKManager::trackSpinsDeltaOmega(int numTracks)
 
 }
 
+double SRKManager::calculateSzDetectionProbability(double phi, double theta)
+{
+	double cosPhi = cos(phi);
+	double cosTheta = cos(theta);
+
+	double probOut = 0.5 * (1. + cosPhi * cosTheta); //Probability out
+
+//	//Error propogation
+//	double sinPhi = sin(phi);
+//	double sinTheta = sin(theta);
+//	double probErrPhi=phiError*sinPhi;
+//	double probErrTheta=thetaError*sinTheta;
+//	probErrorOut=0.5*probOut*sqrt(pow(probErrPhi/cosPhi,2)+pow(probErrTheta/cosTheta,2));
+
+	return probOut;
+}
+
 bool SRKManager::fileExists(TString strFileName)
 {
 	struct stat stFileInfo;
 	return stat(strFileName.Data(), &stFileInfo) == 0;
 }
 
-//TGraphErrors* SRKManager::trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, int numOmegaSteyerl, double OmegaSteyerlStart, double OmegaSteyerlEnd, bool useLog, int approximateReflectionsFixedTime)
-//{
-//	vector<double> x(numOmegaSteyerl);
-//	vector<double> y(numOmegaSteyerl);
-//	vector<double> eY(numOmegaSteyerl);
-//
-//	double oldTimeLimit = getTimeLimit(); //in case we are using approximateRefelectionsFixedTime
-//
-//	double increment;
-//	if(useLog)
-//	{
-//		increment = (log10(OmegaSteyerlEnd) - log10(OmegaSteyerlStart)) / (numOmegaSteyerl - 1);
-//	}
-//	else
-//	{
-//		increment = (OmegaSteyerlEnd - OmegaSteyerlStart) / (numOmegaSteyerl - 1);
-//	}
-//
-//	for (int i = 0; i < numOmegaSteyerl; i++)
-//	{
-//		TString subRunID=runID+"_" + Form("%i",i);
-//		//If we want to emulate a fixed number of reflections but still not bias, we'll use a time limit to get us close to the same reflections
-//
-//		if(useLog)
-//		{
-//			x[i] = pow(10, log10(OmegaSteyerlStart) + increment * i);
-//		}
-//		else
-//		{
-//			x[i] = OmegaSteyerlStart + increment * i;
-//		}
-//		setVelByOmegaSteyerl(x[i]);
-//		if(approximateReflectionsFixedTime > 0)
-//		{
-//			double timeLimit = approximateReflectionsFixedTime * .4 / abs(getMeanVel());
-//			setTimeLimit(timeLimit);
-//		}
-//		cout << " ------------------------------" << endl;
-//		cout << "Set#: " << i << "    Omega = " << x[i] << "    Vel = " << getMeanVel() << endl;
-//		cout << " ------------------------------" << endl;
-//		trackSpinsDeltaOmega(numTracksPerPoint);
-//		double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
-//		y[i] = deltaPhaseMean/zetaEtaOmega0;
-//		eY[i] = deltaPhaseError/zetaEtaOmega0;
-//	}
-//
-//	TCanvas theCanvas("theCanvas", "theCanvas", 1600, 1200);
-//	theCanvas.SetLogx();
-//
-//	TGraphErrors* outGraph = new TGraphErrors(numOmegaSteyerl, x.data(), y.data(), NULL, eY.data());
-//	outGraph->SetName(runNameString + "OmegaGraph");
-//	outGraph->SetTitle(runNameString + " Geometric Phase Plot");
-//	outGraph->GetYaxis()->SetTitle("#frac{#Delta#omega}{#zeta#eta#omega_{0}}");
-//	outGraph->GetXaxis()->SetTitle("#omega_{r} / #omega_{0}");
-//	outGraph->GetXaxis()->SetLimits(0.01, 100);
-//	outGraph->GetXaxis()->SetRangeUser(0.01, 100);
-//	outGraph->GetXaxis()->SetNoExponent();
-//	//outGraph->GetYaxis()->SetLimits(-3.4999,2);
-//	//outGraph->GetYaxis()->SetRangeUser(-3.4999,2);
-//
-//	outGraph->Draw("APE1");
-//	theCanvas.SaveAs(SRKGRAPHSDIR + runNameString + ".png");
-//
-//	//Eventually I should figure out where to throw this function...
-//	ofstream outFile;
-//	outFile.open(SRKHISTSDIR + runNameString + ".txt");
-//	outFile << TString("#") << outGraph->GetTitle() << ";" << outGraph->GetXaxis()->GetTitle() << ";" << outGraph->GetYaxis()->GetTitle() << endl;
-//	for (int i = 0; i < numOmegaSteyerl; i++)
-//	{
-//
-//		outFile.precision(15);
-//		outFile << scientific << x[i];
-//		outFile << "\t" << scientific << 0;
-//		outFile << "\t" << scientific << y[i];
-//		outFile << "\t" << scientific << eY[i];
-//		if(i != numOmegaSteyerl - 1)
-//		{
-//			outFile << endl;
-//		}
-//
-//	}
-//	outFile.close();
-//
-//	setTimeLimit(oldTimeLimit);
-//
-//	return outGraph;
-//}
+bool SRKManager::fileExistsAndNotZombie(TString strFileName)
+{
+
+	TFile theFile(strFileName,"READ");
+	bool isZombie=theFile.IsZombie();
+	theFile.Close();
+	return fileExists(strFileName) && !isZombie;
+}

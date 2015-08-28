@@ -18,10 +18,11 @@ const TString SRKMACROSDIR = "/home/mjbales/work/nedm/macros/";
 struct SRKRunStats
 {
 	SRKRunStats():
-		numEvents(0),
+		numEvents(0),sZDetProb(0.),
 		phiMean(0.),phiError(0.), phiStDev(0.), phiKurtosis(0.),phiKurtosisError(0), phiSkewness(0.), phiSkewnessError(0.), phiTsallisPower(0.), phiTsallisPowerError(0.),
 		thetaMean(0.),thetaError(0.), thetaStDev(0.), thetaKurtosis(0.),thetaKurtosisError(0), thetaSkewness(0.), thetaSkewnessError(0.), thetaTsallisPower(0.), thetaTsallisPowerError(0.) { }
 	int numEvents;
+	double sZDetProb;
 
 	double phiMean;
 	double phiError;
@@ -139,7 +140,9 @@ protected:
 	void loadFields();
 	void calcDeltaPhaseMean(TString inpRunID);
 	SRKRunStats calcResultsFileStats(TString filePath, bool useWrapping);
+	double calculateSzDetectionProbability(double phi, double theta);
 	bool fileExists(TString filePath);
+	bool fileExistsAndNotZombie(TString strFileName);
 
 
 	TVector3 pos0, pos, vel0, vel; //For recording
