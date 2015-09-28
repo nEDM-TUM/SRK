@@ -51,8 +51,8 @@ public:
 	inline void setMeanVel(double inp){meanVel=inp;}
 	inline void setReflectionLimit(int inp){reflectionLimit=inp;}
 	inline void setUse2D(bool inp){use2D=inp;}
-	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height);}
-	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height);}
+	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height*.5);}
+	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height*.5);}
 	inline void setPos(const TVector3& inp){ pos=inp;}
 	inline void setVel(const TVector3& inp){ vel=inp;}
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}

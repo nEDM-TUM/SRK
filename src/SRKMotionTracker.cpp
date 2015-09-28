@@ -35,7 +35,7 @@ SRKMotionTracker::SRKMotionTracker()
 	meanVel = 193; //in m/s
 	radius = 0.235;
 	height = 0.12;
-	theShape = new TGeoTube(0, radius, height);
+	theShape = new TGeoTube(0, radius, height*.5);
 	timeLimit = 100;
 	diffuseReflectionProb = 100;
 	numTracks = 0;
