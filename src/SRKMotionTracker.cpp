@@ -355,22 +355,35 @@ TVector3 SRKMotionTracker::getRandomPointInCylinder()
 
 TVector3 SRKMotionTracker::getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal)
 {
+	TVector3 outVec;
 	if(DiffCoefficient > 0 && gRandom->Rndm() < DiffCoefficient)
 	{
-
-		TVector3 outVec = getDiffuseReflectedVector(normal);
+		outVec = getDiffuseReflectedVector(normal);
 		if(use2D) //Approximate 2D diffuse scattering by just setting z direction to zero
 		{
-			outVec.SetZ(0.);
-			outVec.SetMag(1);
-		}
-		return outVec;
-	}
 
-	//Specular Reflection
-	double NormDirection = currentDirection.Dot(normal);
-	// proportional component normal to the surface
-	return currentDirection - 2 * normal * NormDirection;
+			if(additionalRandomVelZ != 0.) //If we're in this special circumstance then specularly reflect the z direction only)
+			{
+				//Ensure that x y component's share is the same as before
+				outVec.SetMag(currentDirection.Mag2() / (currentDirection.x() * currentDirection.x() + currentDirection.y() * currentDirection.y()));
+				outVec.SetZ(currentDirection.z() * (1. - 2. * normal.z() * normal.z())); //reflect specularly the z direction
+			}
+			else
+			{
+				outVec.SetZ(0.);
+			}
+		}
+	}
+	else
+	{
+
+		//Specular Reflection
+		double NormDirection = currentDirection.Dot(normal);
+		// proportional component normal to the surface
+		outVec=currentDirection - 2 * normal * NormDirection;
+	}
+	outVec.SetMag(1);
+	return outVec;
 
 }
 
