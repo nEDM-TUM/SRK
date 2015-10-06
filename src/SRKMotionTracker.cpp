@@ -207,6 +207,11 @@ void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TV
 		posOut.SetZ(0.);
 	}
 	velOut.SetMag(meanVel);
+
+	if(additionalRandomVelZ != 0.)
+	{
+		vel.SetZ(vel.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
+	}
 }
 
 void SRKMotionTracker::makeTrack(int inpTrackID)
@@ -221,10 +226,6 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 		getRandomDirectionAndPointInCylinder(pos, vel);
 	}
 
-	if(additionalRandomVelZ != 0.)
-	{
-		vel.SetZ(vel.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
-	}
 
 	trackTree->Fill(); //Record initial point
 
