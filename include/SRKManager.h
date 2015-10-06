@@ -86,6 +86,7 @@ public:
 	inline double getMeanVel(){return theMotionTracker->getMeanVel();}
 	inline int getReflectionLimit(){return theMotionTracker->getReflectionLimit();}
 	inline bool getUse2D(){return theMotionTracker->getUse2D();}
+	inline double getAdditionalRandomVelZ(){return theMotionTracker->getAdditionalRandomVelZ();}
 	inline bool getManualTracking(){return theMotionTracker->getManualTracking();}
 	inline TVector3 getPos(){return theMotionTracker->getPos();}
 	inline TVector3 getVel(){return theMotionTracker->getVel();}
@@ -120,7 +121,8 @@ public:
 	inline void setDiffuseReflectionProb(double inp){theMotionTracker->setDiffuseReflectionProb(inp);}
 	inline void setMeanVel(double inp){theMotionTracker->setMeanVel(inp);}
 	inline void setReflectionLimit(int inp){theMotionTracker->setReflectionLimit(inp);}
-	inline void setUse2D(bool inp){theMotionTracker->setUse2D(inp);};
+	inline void setUse2D(bool inp){theMotionTracker->setUse2D(inp);}
+	inline void setAdditionalRandomVelZ(bool inp){theMotionTracker->setAdditionalRandomVelZ(inp);}
 	inline void setChamberRadius(double inp){theMotionTracker->setChamberRadius(inp);}
 	inline void setChamberHeight(double inp){theMotionTracker->setChamberHeight(inp);}
 	inline void setVelByOmegaSteyerl(double OmegaSteyerl){theMotionTracker->setMeanVel(fabs(OmegaSteyerl*getGyromagneticRatio()*b0FieldStrength*getChamberRadius()));}

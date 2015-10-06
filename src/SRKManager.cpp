@@ -86,6 +86,7 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) getUse2D())));
 	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) getManualTracking())));
 	userInfoList->Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
+	userInfoList->Add(new TNamed("AdditionalRandomVelZ", Form("%e", getAdditionalRandomVelZ())));
 	userInfoList->Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
 	userInfoList->Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
 	userInfoList->Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));

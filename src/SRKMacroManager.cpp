@@ -203,6 +203,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setE0FieldStrength"] = [&](string inp)	{	theManager->setE0FieldStrength(stod(inp));};
 	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};
 	commandMap["setDipoleFieldStrength"] = [&](string inp){	theManager->setDipoleFieldStrength(stod(inp));};
+	commandMap["setAdditionalRandomVelZ"] = [&](string inp){	theManager->setAdditionalRandomVelZ(stod(inp));};
 	commandMap["setPerStepError"] = [&](string inp){	theManager->setPerStepError(stod(inp));};
 	commandMap["setInitialStepSize"] = [&](string inp){	theManager->setInitialStepSize(stod(inp));};
 	commandMap["setDipolePosition"] = [&](string inp){	theManager->setDipolePosition(stoTVector3(inp));};

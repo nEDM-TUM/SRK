@@ -45,12 +45,14 @@ public:
 	inline bool getManualTracking(){return manualTracking;}
 	inline int getReflectionLimit(){return reflectionLimit;}
 	inline bool getUse2D(){return use2D;}
+	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
 	inline void setMeanVel(double inp){meanVel=inp;}
 	inline void setReflectionLimit(int inp){reflectionLimit=inp;}
 	inline void setUse2D(bool inp){use2D=inp;}
+	inline void setAdditionalRandomVelZ(bool inp){additionalRandomVelZ=inp;}
 	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height*.5);}
 	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height*.5);}
 	inline void setPos(const TVector3& inp){ pos=inp;}
@@ -74,6 +76,7 @@ protected:
 	double timeLimit; //Stop after a time limit
 	int reflectionLimit; //Stop after a numer of reflections
 	bool use2D;
+	double additionalRandomVelZ;
 	bool useGravity;
 	bool manualTracking; //Instead of random
 	double diffuseReflectionProb;  //0 = Specular 1=Diffuse Lambert
@@ -100,6 +103,7 @@ protected:
 	//For branch addresses for trees...This is dumb...should probably replace with a state class
 	TVector3* posTree;
 	TVector3* velTree;
+
 
 };
 
