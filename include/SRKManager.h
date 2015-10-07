@@ -122,7 +122,7 @@ public:
 	inline void setMeanVel(double inp){theMotionTracker->setMeanVel(inp);}
 	inline void setReflectionLimit(int inp){theMotionTracker->setReflectionLimit(inp);}
 	inline void setUse2D(bool inp){theMotionTracker->setUse2D(inp);}
-	inline void setAdditionalRandomVelZ(bool inp){theMotionTracker->setAdditionalRandomVelZ(inp);}
+	inline void setAdditionalRandomVelZ(double inp){theMotionTracker->setAdditionalRandomVelZ(inp);}
 	inline void setChamberRadius(double inp){theMotionTracker->setChamberRadius(inp);}
 	inline void setChamberHeight(double inp){theMotionTracker->setChamberHeight(inp);}
 	inline void setVelByOmegaSteyerl(double OmegaSteyerl){theMotionTracker->setMeanVel(fabs(OmegaSteyerl*getGyromagneticRatio()*b0FieldStrength*getChamberRadius()));}

@@ -52,7 +52,7 @@ public:
 	inline void setMeanVel(double inp){meanVel=inp;}
 	inline void setReflectionLimit(int inp){reflectionLimit=inp;}
 	inline void setUse2D(bool inp){use2D=inp;}
-	inline void setAdditionalRandomVelZ(bool inp){additionalRandomVelZ=inp;}
+	inline void setAdditionalRandomVelZ(double inp){additionalRandomVelZ=inp;}
 	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height*.5);}
 	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height*.5);}
 	inline void setPos(const TVector3& inp){ pos=inp;}
