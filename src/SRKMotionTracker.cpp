@@ -210,7 +210,7 @@ void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TV
 
 	if(additionalRandomVelZ != 0.)
 	{
-		vel.SetZ(vel.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
+		velOut.SetZ(velOut.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
 	}
 }
 
