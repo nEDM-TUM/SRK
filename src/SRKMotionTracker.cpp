@@ -244,12 +244,6 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 
 	}
 
-	if(currentTime < 1.01)
-	{
-		cout << "what the" << endl;
-		pos.Print();
-		vel.Print();
-	}
 
 	return;
 }

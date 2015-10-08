@@ -156,6 +156,11 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 
 }
 
+void SRKManager::makeTracks(int numTracks)
+{
+	theMotionTracker->makeTracks(numTracks,trackFilePath);
+}
+
 
 bool SRKManager::trackSpins(int numTracks)
 {
@@ -559,3 +564,5 @@ bool SRKManager::fileExistsAndNotZombie(TString strFileName)
 	theFile.Close();
 	return fileExists(strFileName) && !isZombie;
 }
+
+

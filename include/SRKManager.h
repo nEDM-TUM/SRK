@@ -56,6 +56,7 @@ public:
 	void trackSpinsDeltaOmega(int numTracks);
 	void loadParametersFromResultsFile(TString filePath);
 	void outputDataForRIDs(TString rangeString); //Format of int int
+	void makeTracks(int numTracks);
 	//TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
 
 	//Getters
