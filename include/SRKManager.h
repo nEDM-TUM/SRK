@@ -91,6 +91,8 @@ public:
 	inline bool getManualTracking(){return theMotionTracker->getManualTracking();}
 	inline TVector3 getPos(){return theMotionTracker->getPos();}
 	inline TVector3 getVel(){return theMotionTracker->getVel();}
+	inline int getRandomSeed(){ return randomSeed;}
+
 
 	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
 	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
@@ -130,6 +132,7 @@ public:
 	inline void setManualTracking(bool inp){ theMotionTracker->setManualTracking(inp);}
 	inline void setPos(const TVector3& inp){ theMotionTracker->setPos(inp);}
 	inline void setVel(const TVector3& inp){ theMotionTracker->setVel(inp);}
+	inline void setRandomSeed(const int inp){ randomSeed=inp;}
 
 
 
@@ -152,6 +155,7 @@ protected:
 	double phi0, phi, theta0, theta; //For recording
 	double time0, time;
 	int trackID;
+	int randomSeed;
 
 	bool recordAllSteps;
 

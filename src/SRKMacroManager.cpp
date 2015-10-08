@@ -1,7 +1,10 @@
 #include "SRKMacroManager.h"
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+#include "TRandom.h"
 
 using namespace std;
 
@@ -212,6 +215,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
 	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};
 	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
+	commandMap["setRandomSeed"] = [&](string inp) { theManager->setRandomSeed(stoi(inp));};
 	commandMap["setDefaultResultsDir"] = [&](string inp)	{	theManager->setDefaultResultsDir(inp);};
 	commandMap["setRunID"] = [&](string inp)	{	theManager->setRunID(inp);};
 	commandMap["makeTracks"] = [&](string inp)	{	theManager->makeTracks(stoi(inp));};

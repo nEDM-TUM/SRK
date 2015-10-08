@@ -1,14 +1,17 @@
 #include "SRKManager.h"
-#include "TMath.h"
-#include "TCanvas.h"
+
 #include <iostream>
 #include <time.h>
 #include <iomanip>
 #include <string>
 
+#include "TMath.h"
+#include "TCanvas.h"
+#include "TF1.h"
+#include "TRandom.h"
+
 #include "SRKGraphics.h"
 #include "SRKMacroManager.h"
-#include "TF1.h"
 
 using namespace std;
 
@@ -34,6 +37,7 @@ SRKManager::SRKManager()
 	defaultResultsDir="/home/mjbales/work/nedm/results/"; //only when resultsFilePath is not appropriate
 	resultsFilePath = defaultResultsDir + "test.root";
 	runID="RIDX";
+	randomSeed=0;
 }
 
 SRKManager::~SRKManager()
@@ -168,6 +172,11 @@ bool SRKManager::trackSpins(int numTracks)
 
 	clock_t t1, t2;
 	t1 = clock();
+
+	if(randomSeed != 0)
+	{
+		gRandom->SetSeed(randomSeed);
+	}
 
 	if(!useDynamic)
 	{
