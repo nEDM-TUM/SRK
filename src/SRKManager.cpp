@@ -96,6 +96,7 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));
 	userInfoList->Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
 	userInfoList->Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
+	userInfoList->Add(new TNamed(TString("VelProfHistPath"), getVelProfHistPath()));
 	userInfoList->Add(new TNamed(TString("RunID"), getRunID()));
 	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
 	userInfoList->Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
@@ -216,7 +217,7 @@ bool SRKManager::trackSpins(int numTracks)
 			}
 			else
 			{
-				theMotionTracker->getRandomDirectionAndPointInCylinder(pos, vel);
+				theMotionTracker->getRandomVelocityVectorAndPosition(pos, vel);
 			}
 //			pos.SetXYZ(0,0,0);
 			trackID = i;

@@ -48,6 +48,8 @@ SRKMotionTracker::SRKMotionTracker()
 	manualTracking=false;
 	vel.SetXYZ(meanVel,0,0);
 	additionalRandomVelZ=0.;
+	velProfHistPath="";
+	velProfHist=NULL;
 
 }
 
@@ -58,6 +60,7 @@ SRKMotionTracker::~SRKMotionTracker()
 	delete theShape;
 	delete posTree;
 	delete velTree;
+	delete velProfHist;
 }
 
 void SRKMotionTracker::closeTrackFile()
@@ -193,7 +196,7 @@ void SRKMotionTracker::makeTracks(int numTracksToAdd)
 	cout << "Average Reflections: " << (double) totalReflections / (double) numTracksToAdd << endl;
 }
 
-void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut)
+void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut)
 {
 
 	//Begin with random points
@@ -206,13 +209,45 @@ void SRKMotionTracker::getRandomDirectionAndPointInCylinder(TVector3& posOut, TV
 		//velOut.SetMag(1);
 		posOut.SetZ(0.);
 	}
-	velOut.SetMag(meanVel);
+
+	if(velProfHist != NULL)
+	{
+		velOut.SetMag(velProfHist->GetRandom());
+	}
+	else
+	{
+		velOut.SetMag(meanVel);
+	}
 
 	if(additionalRandomVelZ != 0.)
 	{
 		velOut.SetZ(velOut.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
 	}
 }
+
+bool SRKMotionTracker::loadVelProfHist()
+{
+	delete velProfHist;
+	velProfHist=NULL;
+	if(velProfHistPath == "")
+		return true;
+
+	TFile velProfFile(velProfHistPath, "READ");
+	if(velProfFile.IsZombie() || !velProfFile.IsOpen())
+	{
+		cout << "Error opening track file: " << velProfHistPath << endl;
+		return false;
+	}
+
+	velProfHist=(TH1D*) velProfFile.Get("VelProfHist");
+	velProfHist->SetDirectory(0);
+	velProfFile.Close();
+
+	cout << "Loaded velocity profile histogram, " << velProfHist->GetTitle() << ", from " << velProfHistPath << endl;
+
+	return true;
+}
+
 
 void SRKMotionTracker::makeTrack(int inpTrackID)
 {
@@ -223,7 +258,7 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 
 	if(!manualTracking)
 	{
-		getRandomDirectionAndPointInCylinder(pos, vel);
+		getRandomVelocityVectorAndPosition(pos, vel);
 	}
 
 

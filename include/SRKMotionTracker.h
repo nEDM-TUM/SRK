@@ -8,6 +8,7 @@
 #include "TVector2.h"
 #include "TGeoShape.h"
 #include "TGeoTube.h"
+#include "TH1.h"
 
 class SRKMotionTracker
 {
@@ -24,12 +25,14 @@ public:
 
 	TVector3 getRandomDirection();
 	TVector3 getRandomPointInCylinder();
-	void getRandomDirectionAndPointInCylinder(TVector3& posOut, TVector3& velOut);
+	void getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut);
 
 	bool loadTrackFile(TString filePath); //returns true if successful
 	void openTrackFile(TString inpTrackFilePath);
 	void closeTrackFile();
 	void writeTrackToFile();
+
+
 
 	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
 
@@ -46,6 +49,7 @@ public:
 	inline int getReflectionLimit(){return reflectionLimit;}
 	inline bool getUse2D(){return use2D;}
 	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
+	inline const TString getVelProfHistPath(){return velProfHistPath;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -58,11 +62,14 @@ public:
 	inline void setPos(const TVector3& inp){ pos=inp;}
 	inline void setVel(const TVector3& inp){ vel=inp;}
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}
+	inline void setVelProfHistPath(const TString inp){velProfHistPath=inp; loadVelProfHist();}
 
 protected:
 
 	double getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius);
 	TVector3 getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal);
+	bool loadVelProfHist();
+	double getRandomVelFromProfHist();
 
 	TVector3 getDiffuseReflectedVector(const TVector3 normal);
 
@@ -84,6 +91,8 @@ protected:
 	//Particle
 	double mass;
 	double meanVel;
+	TH1* velProfHist;
+	TString velProfHistPath;
 
 	//Geometry
 	double radius;

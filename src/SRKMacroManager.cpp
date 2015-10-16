@@ -217,6 +217,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
 	commandMap["setRandomSeed"] = [&](string inp) { theManager->setRandomSeed(stoi(inp));};
 	commandMap["setDefaultResultsDir"] = [&](string inp)	{	theManager->setDefaultResultsDir(inp);};
+	commandMap["setVelProfHistPath"] = [&](string inp)	{	theManager->setVelProfHistPath(inp);};
 	commandMap["setRunID"] = [&](string inp)	{	theManager->setRunID(inp);};
 	commandMap["makeTracks"] = [&](string inp)	{	theManager->makeTracks(stoi(inp));};
 	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
