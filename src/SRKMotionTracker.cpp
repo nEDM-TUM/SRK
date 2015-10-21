@@ -50,6 +50,7 @@ SRKMotionTracker::SRKMotionTracker()
 	additionalRandomVelZ=0.;
 	velProfHistPath="";
 	velProfHist=NULL;
+	temperature=0;
 
 }
 
@@ -216,7 +217,19 @@ void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVec
 	}
 	else
 	{
-		velOut.SetMag(meanVel);
+		//use maxwell distribution with the rest of the path being the temp
+		if(temperature > 0)
+		{
+			double maxwellConst = TMath::Sqrt(mass/(2.*TMath::Pi()*TMath::K()*temperature));
+			for(int i = 0; i < 3; i++)
+			{
+				velOut[i]=maxwellConst*gRandom->Gaus();
+			}
+		}
+		else
+		{
+			velOut.SetMag(meanVel);
+		}
 	}
 
 	if(additionalRandomVelZ != 0.)
@@ -229,9 +242,15 @@ bool SRKMotionTracker::loadVelProfHist()
 {
 	delete velProfHist;
 	velProfHist=NULL;
+	temperature=0;
 	if(velProfHistPath == "")
 		return true;
-
+	if(velProfHistPath[0] =='!')
+	{
+		TString temp = velProfHistPath;
+		temp.Remove(0,1);
+		temperature = temp.Atof();
+	}
 	TFile velProfFile(velProfHistPath, "READ");
 	if(velProfFile.IsZombie() || !velProfFile.IsOpen())
 	{

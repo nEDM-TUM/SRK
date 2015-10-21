@@ -91,6 +91,7 @@ protected:
 	//Particle
 	double mass;
 	double meanVel;
+	double temperature;
 	TH1* velProfHist;
 	TString velProfHistPath;
 
