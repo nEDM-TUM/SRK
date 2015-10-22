@@ -101,6 +101,8 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
 	userInfoList->Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
 	userInfoList->Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
+	userInfoList->Add(new TNamed("EPSAbs", Form("%e", getEPSAbs())));
+	userInfoList->Add(new TNamed("EPSRel", Form("%e", getEPSRel())));
 	userInfoList->Add(new TNamed("DiffuseReflectionProb", Form("%e", getDiffuseReflectionProb())));
 	userInfoList->Add(new TNamed("ChamberRadius", Form("%e", getChamberRadius())));
 	userInfoList->Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
@@ -110,10 +112,6 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
 	userInfoList->Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
 	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
-
-	double eps_abs, eps_rel;
-	getPerStepError(eps_abs, eps_rel);
-	userInfoList->Add(new TNamed("PerStepError", Form("%f %f", eps_abs, eps_rel)));
 
 	resultsFile->Write("", TObject::kOverwrite);
 
@@ -135,7 +133,7 @@ void SRKManager::loadParametersFromResultsFile(TString filePath)
 		TNamed* par=(TNamed*) userInfoList->At(i);
 		string command=string("set")+par->GetName();
 		string value = par->GetTitle();
-		if(command != "setStepsTaken" && command != "setPerStepError")
+		if(command != "setStepsTaken")
 		{
 			cout << "SRK: " << command << " " << value << endl;
 			tempManager.runMacroCommand(command,value);

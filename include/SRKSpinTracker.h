@@ -18,12 +18,14 @@ public:
 	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=NULL, std::vector<double>* stepTimes=NULL);
 
 	inline void resetStepsTaken(){stepsTaken=0;}
-	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel=0){eps_abs =inp_eps_abs; if(inp_eps_rel !=0) eps_rel =inp_eps_rel; else eps_rel =inp_eps_abs;}
+	inline void setEPSAbs(double inp){eps_abs =inp;}
+	inline void setEPSRel(double inp){eps_rel =inp;}
 	inline void setInitialStepSize(double inp){initialStepSize=inp;}
 	inline void setConstStepper(bool inp){constStepper=inp;}
 	inline void setGyromagneticRatio(double inp){theEquationOfMotion.setGyromagneticRatio(inp);}
 
-	inline void getPerStepError(double& inp_eps_abs, double& inp_eps_rel){inp_eps_abs = eps_abs;inp_eps_rel=eps_rel;}
+	inline double getEPSAbs(){return eps_abs;}
+	inline double getEPSRel(){return eps_rel;}
 	inline int getStepsTaken(){return stepsTaken;}
 	inline double getGyromagneticRatio(){return theEquationOfMotion.getGyromagneticRatio();}
 	inline bool getConstStepper(){return constStepper;}

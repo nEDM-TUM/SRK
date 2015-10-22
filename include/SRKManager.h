@@ -77,7 +77,7 @@ public:
 
 	inline double getGyromagneticRatio(){return theSpinTracker->getGyromagneticRatio();}
 	inline int getStepsTaken(){return theSpinTracker->getStepsTaken();}
-	inline void getPerStepError(double& inp_eps_abs, double& inp_eps_rel){return theSpinTracker->getPerStepError(inp_eps_abs,inp_eps_rel);}
+
 	inline bool getConstStepper(){return theSpinTracker->getConstStepper();}
 
 	inline double getTimeLimit(){return theMotionTracker->getTimeLimit();}
@@ -93,7 +93,8 @@ public:
 	inline TVector3 getVel(){return theMotionTracker->getVel();}
 	inline int getRandomSeed(){ return randomSeed;}
 	inline TString getVelProfHistPath(){return theMotionTracker->getVelProfHistPath();}
-
+	inline double getEPSAbs(){return theSpinTracker->getEPSAbs();}
+	inline double getEPSRel(){return theSpinTracker->getEPSRel();}
 	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
 	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
 	inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
@@ -116,7 +117,8 @@ public:
 	inline void setRunID(TString inp) {runID=inp;}
 
 	inline void setGyromagneticRatio(double inp){theSpinTracker->setGyromagneticRatio(inp);}
-	inline void setPerStepError(double inp_eps_abs,double inp_eps_rel=0){theSpinTracker->setPerStepError(inp_eps_abs,inp_eps_rel);}
+	inline void setEPSAbs(double inp){theSpinTracker->setEPSAbs(inp);}
+	inline void setEPSRel(double inp){theSpinTracker->setEPSRel(inp);}
 	inline void setInitialStepSize(double inp){theSpinTracker->setInitialStepSize(inp);}
 	inline void setConstStepper(bool inp){theSpinTracker->setConstStepper(inp);}
 
