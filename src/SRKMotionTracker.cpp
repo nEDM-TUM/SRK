@@ -220,10 +220,10 @@ void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVec
 		//use maxwell distribution with the rest of the path being the temp
 		if(temperature > 0)
 		{
-			double maxwellConst = TMath::Sqrt(mass/(2.*TMath::Pi()*TMath::K()*temperature));
+			double maxwellVariance = TMath::Sqrt(TMath::K()*temperature/mass);
 			for(int i = 0; i < 3; i++)
 			{
-				velOut[i]=maxwellConst*gRandom->Gaus();
+				velOut[i]=gRandom->Gaus(0,maxwellVariance);
 			}
 		}
 		else
@@ -236,6 +236,9 @@ void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVec
 	{
 		velOut.SetZ(velOut.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
 	}
+
+	cout << "Pos: "; posOut.Print();
+	cout << "Vel: "; velOut.Print();
 }
 
 bool SRKMotionTracker::loadVelProfHist()
@@ -284,6 +287,7 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 
 
 	trackTree->Fill(); //Record initial point
+
 
 #ifdef SRKTRACKDEBUG
 	//Initial pos/vel
