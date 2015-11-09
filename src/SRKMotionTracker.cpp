@@ -250,6 +250,8 @@ bool SRKMotionTracker::loadVelProfHist()
 		TString temp = velProfHistPath;
 		temp.Remove(0,1);
 		temperature = temp.Atof();
+		cout << "Using Maxwell distribution at temperature " << temperature << endl;
+		return true;
 	}
 	TFile velProfFile(velProfHistPath, "READ");
 	if(velProfFile.IsZombie() || !velProfFile.IsOpen())
