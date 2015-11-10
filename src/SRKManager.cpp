@@ -99,6 +99,7 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed(TString("VelProfHistPath"), getVelProfHistPath()));
 	userInfoList->Add(new TNamed(TString("RunID"), getRunID()));
 	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
+	userInfoList->Add(new TNamed("Mass", Form("%e", getMass())));
 	userInfoList->Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
 	userInfoList->Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
 	userInfoList->Add(new TNamed("EPSAbs", Form("%e", getEPSAbs())));

@@ -237,8 +237,6 @@ void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVec
 		velOut.SetZ(velOut.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
 	}
 
-	cout << "Pos: "; posOut.Print();
-	cout << "Vel: "; velOut.Print();
 }
 
 bool SRKMotionTracker::loadVelProfHist()

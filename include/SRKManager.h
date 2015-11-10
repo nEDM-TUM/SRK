@@ -98,6 +98,7 @@ public:
 	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
 	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
 	inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
+	inline double getMass(){return theMotionTracker->getMass();}
 
 
 
@@ -136,6 +137,7 @@ public:
 	inline void setVel(const TVector3& inp){ theMotionTracker->setVel(inp);}
 	inline void setRandomSeed(const int inp){ randomSeed=inp;}
 	inline void setVelProfHistPath(const TString inp){theMotionTracker->setVelProfHistPath(inp);}
+	inline void setMass(const double inp){theMotionTracker->setMass(inp);}
 
 
 

@@ -50,6 +50,7 @@ public:
 	inline bool getUse2D(){return use2D;}
 	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
 	inline const TString getVelProfHistPath(){return velProfHistPath;}
+	inline double getMass(){return mass;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -63,6 +64,7 @@ public:
 	inline void setVel(const TVector3& inp){ vel=inp;}
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}
 	inline void setVelProfHistPath(const TString inp){velProfHistPath=inp; loadVelProfHist();}
+	inline void setMass(const double inp){mass=inp;}
 
 protected:
 
