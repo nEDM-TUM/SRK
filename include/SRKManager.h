@@ -74,6 +74,8 @@ public:
 	inline TString getRunID() { return runID;}
 	inline double getPhaseMean(){return phaseMean;}
 	inline double getPhaseError(){return phaseError;}
+	inline double getPhiStart(){return phiStart;}
+	inline double getThetaStart(){return thetaStart;}
 
 	inline double getGyromagneticRatio(){return theSpinTracker->getGyromagneticRatio();}
 	inline int getStepsTaken(){return theSpinTracker->getStepsTaken();}
@@ -116,6 +118,8 @@ public:
 	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
 	inline void setDefaultResultsDir(TString inp) {defaultResultsDir=inp;}
 	inline void setRunID(TString inp) {runID=inp;}
+	inline void setPhiStart(const double inp){phiStart=inp;}
+	inline void setThetaStart(const double inp){thetaStart=inp;}
 
 	inline void setGyromagneticRatio(double inp){theSpinTracker->setGyromagneticRatio(inp);}
 	inline void setEPSAbs(double inp){theSpinTracker->setEPSAbs(inp);}
@@ -141,6 +145,7 @@ public:
 
 
 
+
 protected:
 	void createResultsFile(TString resultsFilePath);
 	void closeResultsFile();
@@ -158,6 +163,8 @@ protected:
 
 	TVector3 pos0, pos, vel0, vel; //For recording
 	double phi0, phi, theta0, theta; //For recording
+
+	double phiStart,thetaStart;
 	double time0, time;
 	int trackID;
 	int randomSeed;

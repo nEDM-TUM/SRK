@@ -196,6 +196,8 @@ void SRKMacroManager::defineCommands()
 	commandMap["setManualTracking"] = [&](string inp) {	theManager->setManualTracking(stobool(inp));};
 	commandMap["setGyromagneticRatio"] = [&](string inp){	theManager->setGyromagneticRatio(stod(inp));};
 	commandMap["setMass"] = [&](string inp){	theManager->setMass(stod(inp));};
+	commandMap["setPhiStart"] = [&](string inp){	theManager->setPhiStart(stod(inp));};
+	commandMap["setThetaStart"] = [&](string inp){	theManager->setThetaStart(stod(inp));};
 	commandMap["setTimeLimit"] = [&](string inp){	theManager->setTimeLimit(stod(inp));};
 	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->setDiffuseReflectionProb(stod(inp));};
 	commandMap["setMeanVel"] = [&](string inp){	theManager->setMeanVel(stod(inp));};

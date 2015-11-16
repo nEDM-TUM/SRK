@@ -38,6 +38,8 @@ SRKManager::SRKManager()
 	resultsFilePath = defaultResultsDir + "test.root";
 	runID="RIDX";
 	randomSeed=0;
+	phiStart=0; //For input via macros
+	thetaStart=0;
 }
 
 SRKManager::~SRKManager()
@@ -228,8 +230,8 @@ bool SRKManager::trackSpins(int numTracks)
 			theMotionTracker->getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
 		}
 		updateMotionStatePosVel(theState, pos, vel, currentTime);
-		theState[6] = 0; //Phi
-		theState[7] = 0; //Theta
+		theState[6] = phiStart; //Phi
+		theState[7] = thetaStart; //Theta
 		setInitialState(theState);
 
 		if(i % 100 == 0) cout << "Spinning track: " << trackID << endl;

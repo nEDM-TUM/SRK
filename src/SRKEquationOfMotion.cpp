@@ -11,7 +11,6 @@ SRKEquationOfMotion::SRKEquationOfMotion(SRKGlobalField* inpGlobalField)
 {
 	theGlobalField = inpGlobalField;
 	gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
-	//gyromagneticRatio = -5.e7;  //Test
 }
 
 SRKEquationOfMotion::~SRKEquationOfMotion()
@@ -53,6 +52,7 @@ void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dx
 	SRKSpinFloat dphi = gyromagneticRatio * (thetaPrime * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Presumes tan(theta)~=theta
 //	SRKSpinFloat dphi = gyromagneticRatio * (tan(thetaPrime) * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Exact equation (though issues if theta wraps around)
 	SRKSpinFloat dthetaPrime = gyromagneticRatio * (theField[1] * cosphi - theField[0] * sinphi);
+//	SRKSpinFloat dthetaPrime = 0;
 
 	dxdt[6] = dphi;
 	dxdt[7] = dthetaPrime;
