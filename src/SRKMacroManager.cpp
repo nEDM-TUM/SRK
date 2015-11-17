@@ -215,6 +215,8 @@ void SRKMacroManager::defineCommands()
 	commandMap["setInitialStepSize"] = [&](string inp){	theManager->setInitialStepSize(stod(inp));};
 	commandMap["setDipolePosition"] = [&](string inp){	theManager->setDipolePosition(stoTVector3(inp));};
 	commandMap["setDipoleDirection"] = [&](string inp){	theManager->setDipoleDirection(stoTVector3(inp));};
+	commandMap["setE0FieldDirection"] = [&](string inp){	theManager->setE0FieldDirection(stoTVector3(inp));};
+	commandMap["setB0FieldDirection"] = [&](string inp){	theManager->setB0FieldDirection(stoTVector3(inp));};
 	commandMap["setPos"] = [&](string inp)	{	theManager->setPos(stoTVector3(inp));};
 	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
 	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};

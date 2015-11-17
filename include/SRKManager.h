@@ -69,6 +69,8 @@ public:
 	inline double getDipoleFieldStrength(){ return dipoleFieldStrength;}
 	inline TVector3 getDipolePosition(){ return dipolePosition;}
 	inline TVector3 getDipoleDirection(){ return dipoleDirection;}
+	inline TVector3 getE0FieldDirection(){ return e0FieldDirection;}
+	inline TVector3 getB0FieldDirection(){ return b0FieldDirection;}
 	inline TString getTrackFilePath() { return trackFilePath;}
 	inline TString getResultsFilePath() { return resultsFilePath;}
 	inline TString getRunID() { return runID;}
@@ -110,6 +112,8 @@ public:
 	inline void setParallelFields(bool inp){parallelFields=inp;}
 	inline void setB0FieldStrength(double inp){b0FieldStrength=inp;}
 	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
+	inline void setE0FieldDirection(TVector3 inp){e0FieldDirection=inp;}
+	inline void setB0FieldDirection(TVector3 inp){b0FieldDirection=inp;}
 	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
 	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
 	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
@@ -192,6 +196,8 @@ protected:
 	//Magnetic field settings that eventually should be moved to SRKGlobalField
 	double b0FieldStrength;
 	double e0FieldStrength;
+	TVector3 b0FieldDirection;
+	TVector3 e0FieldDirection;
 	double bGradFieldStrength;
 	double dipoleFieldStrength;
 	TVector3 dipolePosition;

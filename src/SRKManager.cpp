@@ -31,6 +31,8 @@ SRKManager::SRKManager()
 	dipoleFieldStrength = 0;
 	dipolePosition.SetXYZ(0, 0, 0);
 	dipoleDirection.SetXYZ(0, 0, 1);
+	e0FieldDirection.SetXYZ(0, 0, 1);
+	b0FieldDirection.SetXYZ(0, 0, 1);
 	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
@@ -115,6 +117,8 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
 	userInfoList->Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
 	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
+	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
+	userInfoList->Add(new TNamed("B0FieldDirection", Form("%f %f %f", getB0FieldDirection().X(), getB0FieldDirection().Y(), getB0FieldDirection().Z())));
 
 	resultsFile->Write("", TObject::kOverwrite);
 
@@ -332,11 +336,11 @@ void SRKManager::loadFields()
 {
 	theGlobalField->setCurrentFieldSettingsToModify(0); //B0 Field
 	theGlobalField->setFieldScalingValue(b0FieldStrength);
-	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
+	theGlobalField->setFieldDirection(b0FieldDirection);
 
 	theGlobalField->setCurrentFieldSettingsToModify(1); //E0 Field
 	theGlobalField->setFieldType(FIELD_ELECTRIC);
-	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
+	theGlobalField->setFieldDirection(e0FieldDirection);
 
 	if(parallelFields)
 		theGlobalField->setFieldScalingValue(e0FieldStrength);
