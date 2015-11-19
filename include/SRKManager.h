@@ -55,7 +55,7 @@ public:
 	bool trackSpins(int numTracks);
 	void trackSpinsDeltaOmega(int numTracks);
 	void loadParametersFromResultsFile(TString filePath);
-	void outputDataForRIDs(TString rangeString); //Format of int int
+	void outputDataForRIDs(TString rangeString); //Format of int
 	void makeTracks(int numTracks);
 	//TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
 
@@ -66,6 +66,7 @@ public:
 	inline double getB0FieldStrength(){ return b0FieldStrength;}
 	inline double getE0FieldStrength(){ return e0FieldStrength;}
 	inline double getBGradFieldStrength(){ return bGradFieldStrength;}
+	inline double getEGradFieldStrength(){ return eGradFieldStrength;}
 	inline double getDipoleFieldStrength(){ return dipoleFieldStrength;}
 	inline TVector3 getDipolePosition(){ return dipolePosition;}
 	inline TVector3 getDipoleDirection(){ return dipoleDirection;}
@@ -115,6 +116,7 @@ public:
 	inline void setE0FieldDirection(TVector3 inp){e0FieldDirection=inp;}
 	inline void setB0FieldDirection(TVector3 inp){b0FieldDirection=inp;}
 	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
+	inline void setEGradFieldStrength(double inp){eGradFieldStrength=inp;}
 	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
 	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
 	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
@@ -199,6 +201,7 @@ protected:
 	TVector3 b0FieldDirection;
 	TVector3 e0FieldDirection;
 	double bGradFieldStrength;
+	double eGradFieldStrength;
 	double dipoleFieldStrength;
 	TVector3 dipolePosition;
 	TVector3 dipoleDirection;

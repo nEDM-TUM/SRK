@@ -97,6 +97,7 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("AdditionalRandomVelZ", Form("%e", getAdditionalRandomVelZ())));
 	userInfoList->Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
 	userInfoList->Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
+	userInfoList->Add(new TNamed("EGradFieldStrength", Form("%e", getEGradFieldStrength())));
 	userInfoList->Add(new TNamed("DipoleFieldStrength", Form("%e", getDipoleFieldStrength())));
 	userInfoList->Add(new TNamed(TString("TrackFilePath"), getTrackFilePath()));
 	userInfoList->Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
@@ -357,6 +358,12 @@ void SRKManager::loadFields()
 	theGlobalField->setFieldScalingValue(dipoleFieldStrength);
 	theGlobalField->setFieldMoment(dipoleDirection);
 	theGlobalField->setFieldCenterPos(dipolePosition);
+
+	theGlobalField->setCurrentFieldSettingsToModify(4); //E Grad Field
+	theGlobalField->setFieldType(FIELD_ELECTRIC);
+	theGlobalField->setFieldClass(FIELDCLASS_GRADIENT);
+	theGlobalField->setFieldScalingValue(eGradFieldStrength);
+	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
 
 	theGlobalField->updateField();
 
