@@ -26,6 +26,7 @@ public:
 	TVector3 getRandomDirection();
 	TVector3 getRandomPointInCylinder();
 	void getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut);
+	TVector3 getRandomVelocityVector();
 
 	bool loadTrackFile(TString filePath); //returns true if successful
 	void openTrackFile(TString inpTrackFilePath);
@@ -51,6 +52,7 @@ public:
 	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
 	inline const TString getVelProfHistPath(){return velProfHistPath;}
 	inline double getMass(){return mass;}
+	inline double getMeanFreePath(){return meanFreePath;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -65,6 +67,7 @@ public:
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}
 	inline void setVelProfHistPath(const TString inp){velProfHistPath=inp; loadVelProfHist();}
 	inline void setMass(const double inp){mass=inp;}
+	inline void setMeanFreePath(const double inp){meanFreePath=inp;}
 
 protected:
 
@@ -96,6 +99,7 @@ protected:
 	double temperature;
 	TH1* velProfHist;
 	TString velProfHistPath;
+	double meanFreePath; //in meters, negative means no mean free path
 
 	//Geometry
 	double radius;
@@ -111,6 +115,7 @@ protected:
 	int trackID;
 	bool lastTrack;
 	int totalReflections;
+	int totalGasCollisions;
 
 	//For branch addresses for trees...This is dumb...should probably replace with a state class
 	TVector3* posTree;

@@ -51,6 +51,8 @@ SRKMotionTracker::SRKMotionTracker()
 	velProfHistPath="";
 	velProfHist=NULL;
 	temperature=0;
+	meanFreePath=-1;
+	totalGasCollisions=0;
 
 }
 
@@ -82,6 +84,7 @@ void SRKMotionTracker::closeTrackFile()
 	trackID = 0;
 	numTracks = 0;
 	totalReflections = 0;
+	totalGasCollisions =0;
 	gROOT->cd();
 	currentEntry = 0;
 
@@ -197,18 +200,13 @@ void SRKMotionTracker::makeTracks(int numTracksToAdd)
 	cout << "Average Reflections: " << (double) totalReflections / (double) numTracksToAdd << endl;
 }
 
-void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut)
+TVector3 SRKMotionTracker::getRandomVelocityVector()
 {
-
-	//Begin with random points
-	posOut = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
-	velOut = getRandomDirection();
+	TVector3 velOut = getRandomDirection();
 
 	if(use2D)
 	{
 		velOut.SetZ(0.);
-		//velOut.SetMag(1);
-		posOut.SetZ(0.);
 	}
 
 	if(velProfHist != NULL)
@@ -236,6 +234,15 @@ void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVec
 	{
 		velOut.SetZ(velOut.Z()+(2.*gRandom->Rndm()-1.)*additionalRandomVelZ);
 	}
+	return velOut;
+}
+
+void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut)
+{
+
+	//Begin with random points
+	posOut = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
+	velOut = getRandomVelocityVector();  //Also does not account for gravity
 
 }
 
@@ -309,30 +316,51 @@ void SRKMotionTracker::makeTrack(int inpTrackID)
 bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn)
 {
 	TVector3 posRef, velRef;
-	double timeStep = getNextReflection(posIn, velIn, posRef, velRef);
+	double timeToReflection = getNextReflection(posIn, velIn, posRef, velRef);
+
+	//Use Mean Free Path to calculate a time
+	double meanFreePathTime=99999999;
+	if(meanFreePath >0)
+	{
+		double mfpDist=-meanFreePath*log(1.-gRandom->Rndm());  //Randomly determine when the next collision will happen
+		meanFreePathTime = mfpDist/velIn.Mag();
+	}
 	lastTrack = false;
 
-	//If time limit happens earlier than when the next reflection has, stop it
-	if(timeIn + timeStep >= timeLimit)
+	//If time limit happens earlier than when the next reflection/meanfreepath has, stop it
+	if(timeIn + timeToReflection >= timeLimit && timeIn + meanFreePathTime >= timeLimit)
 	{
 
 		posIn += velIn * (timeLimit - timeIn);
 		timeIn = timeLimit;
 		lastTrack = true;
 		totalReflections = 0;
+		totalGasCollisions = 0;
 	}
 	else
 	{
-		timeIn += timeStep;
-		posIn = posRef;
-		velIn = velRef;
-		lastTrack = false;
-		totalReflections++;
-
-		if(totalReflections >= reflectionLimit)
+		//Check to see if mean free path collision happens earlier
+		if(meanFreePathTime < timeToReflection)
 		{
-			lastTrack = true;
-			totalReflections = 0;
+			timeIn += meanFreePathTime;
+			velIn=getRandomVelocityVector(); //Either samples the velocity profile or does random direction
+			posIn += velIn * meanFreePathTime;
+			lastTrack = false;
+			totalGasCollisions++;
+		}
+		else
+		{
+			timeIn += timeToReflection;
+			posIn = posRef;
+			velIn = velRef;
+			lastTrack = false;
+			totalReflections++;
+
+			if(totalReflections >= reflectionLimit)
+			{
+				lastTrack = true;
+				totalReflections = 0;
+			}
 		}
 	}
 
@@ -402,7 +430,11 @@ TVector3 SRKMotionTracker::getRandomPointInCylinder()
 {
 	double r = sqrt(gRandom->Rndm()) * radius;
 	double theta = gRandom->Rndm() * 2. * TMath::Pi();
-	double z = (gRandom->Rndm() - 0.5) * height;
+	double z = 0;
+	if(!use2D)
+	{
+		z= (gRandom->Rndm() - 0.5) * height;
+	}
 	return TVector3(r * cos(theta), r * sin(theta), z);
 }
 
