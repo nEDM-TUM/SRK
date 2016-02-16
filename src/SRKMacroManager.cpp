@@ -176,12 +176,18 @@ bool SRKMacroManager::stobool(string inp)
 	return false;
 }
 
-TVector3 SRKMacroManager::stoTVector3(string inp)
+void SRKMacroManager::sto3double(string inp,double& x,double& y,double& z)
 {
 	stringstream aStringStream(inp);
-	double x, y, z;
 	aStringStream >> x >> y >> z;
+	return;
 
+}
+
+TVector3 SRKMacroManager::stoTVector3(string inp)
+{
+	double x, y, z;
+	sto3double(inp,x, y, z);
 	return TVector3(x, y, z);
 
 }
@@ -206,6 +212,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setVelByOmegaSteyerl"] = [&](string inp){	theManager->setVelByOmegaSteyerl(stod(inp));};
 	commandMap["setChamberRadius"] = [&](string inp){	theManager->setChamberRadius(stod(inp));};
 	commandMap["setChamberHeight"] = [&](string inp){	theManager->setChamberHeight(stod(inp));};
+	commandMap["setChamberRotation"] = [&](string inp){	double x, y, z; sto3double(inp,x, y, z);theManager->setChamberRotation(x,y,z);};
 	commandMap["setB0FieldStrength"] = [&](string inp){	theManager->setB0FieldStrength(stod(inp));};
 	commandMap["setE0FieldStrength"] = [&](string inp)	{	theManager->setE0FieldStrength(stod(inp));};
 	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};

@@ -26,6 +26,7 @@ private:
 	bool getNonCommentLine(ifstream& inpFileStream, TString& outString);
 	bool skipCommentLines(ifstream& inpFileStream);
 	bool stobool(std::string inp);
+	void sto3double(std::string inp,double& x,double& y,double& z);
 	TVector3 stoTVector3(std::string inp);
 
 	std::list<TString> commandStringList;

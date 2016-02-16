@@ -185,10 +185,15 @@ bool SRKManager::trackSpins(int numTracks)
 	{
 		gRandom->SetSeed(randomSeed);
 	}
+	cout << "Using random seed: " << gRandom->GetSeed()<< endl;
 
 	if(!useDynamic)
 	{
 		theMotionTracker->loadTrackFile(trackFilePath);
+	}
+	else
+	{
+		theMotionTracker->makeCylinderGeometry();
 	}
 
 	TVector3 pos;
@@ -226,7 +231,7 @@ bool SRKManager::trackSpins(int numTracks)
 			{
 				theMotionTracker->getRandomVelocityVectorAndPosition(pos, vel);
 			}
-//			pos.SetXYZ(0,0,0);
+
 			trackID = i;
 			lastTrack = false;
 

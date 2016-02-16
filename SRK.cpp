@@ -25,7 +25,6 @@ int main(int argc, char* argv[])
 	if(argc ==2) //argument is the macro file path
 	{
 		TString macroFilePath = argv[1];
-		//TString macroFilePath = SRKMACROSDIR + "test.mac";
 		theMacroManager.openMacroFile(macroFilePath);
 		theMacroManager.runMacroCommands();
 	}
@@ -33,7 +32,6 @@ int main(int argc, char* argv[])
 	{
 		theMacroManager.enterInteractiveMode();
 	}
-
 
 	return 0;
 }

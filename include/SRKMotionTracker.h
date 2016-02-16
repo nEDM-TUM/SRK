@@ -8,6 +8,8 @@
 #include "TVector2.h"
 #include "TGeoShape.h"
 #include "TGeoTube.h"
+#include "TGeoMatrix.h"
+#include "TGeoManager.h"
 #include "TH1.h"
 
 class SRKMotionTracker
@@ -20,6 +22,7 @@ public:
 	void makeTracks(int numTracksToAdd);
 	void drawTrack(int trackID);
 
+	void makeCylinderGeometry();
 	double getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut); //Return time till next reflection
 	bool getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn);
 
@@ -35,12 +38,14 @@ public:
 
 
 
+
+
 	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
 
 	inline double getTimeLimit(){return timeLimit;}
 	inline double getDiffuseReflectionProb(){return diffuseReflectionProb;}
-	inline double getChamberRadius(){return radius;}
-	inline double getChamberHeight(){return height;}
+	inline double getChamberRadius(){return chamberRadius;}
+	inline double getChamberHeight(){return chamberHeight;}
 	inline double getMeanVel(){return meanVel;}
 	inline int getTrackTreeEntries(){return trackTree->GetEntries();}
 	inline int getTotalReflections(){return totalReflections;}
@@ -60,8 +65,9 @@ public:
 	inline void setReflectionLimit(int inp){reflectionLimit=inp;}
 	inline void setUse2D(bool inp){use2D=inp;}
 	inline void setAdditionalRandomVelZ(double inp){additionalRandomVelZ=inp;}
-	inline void setChamberRadius(double inp){delete theShape; radius=inp;theShape= new TGeoTube(0,radius,height*.5);}
-	inline void setChamberHeight(double inp){delete theShape; height=inp;theShape= new TGeoTube(0,radius,height*.5);}
+	inline void setChamberRadius(double inp){chamberRadius=inp; }
+	inline void setChamberHeight(double inp){chamberHeight=inp; }
+	inline void setChamberRotation(double phi,double theta, double psi){chamberPhi=phi;chamberTheta=theta;chamberPsi=psi;}
 	inline void setPos(const TVector3& inp){ pos=inp;}
 	inline void setVel(const TVector3& inp){ vel=inp;}
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}
@@ -81,6 +87,8 @@ protected:
 	void makeTrack(int inpTrackID);
 
 	void makeTrackTree();
+
+
 
 	TTree* trackTree; //Track tree containing position and reflection information
 	int currentEntry;
@@ -102,9 +110,17 @@ protected:
 	double meanFreePath; //in meters, negative means no mean free path
 
 	//Geometry
-	double radius;
-	double height;
-	TGeoShape* theShape;
+	double chamberRadius;
+	double chamberHeight;
+	double chamberPhi;  //Euler angles for chamber rotation
+	double chamberTheta;
+	double chamberPsi;
+	TGeoRotation theRotation;
+	TGeoManager* theGeoManager;
+	TGeoMaterial* vacMat;
+	TGeoMedium* vacMed;
+	double safety;
+	double maxTrackSize;
 
 	TFile* trackFile;
 
