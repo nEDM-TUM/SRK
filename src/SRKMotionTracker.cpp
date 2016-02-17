@@ -536,7 +536,7 @@ TVector3 SRKMotionTracker::getRandomPointInCylinder()
 
 	r1->LocalToMaster(local,master);
 
-	return TVector3(master[0],master[1],master[3]);
+	return TVector3(master[0],master[1],master[2]);
 }
 
 TVector3 SRKMotionTracker::getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal)
