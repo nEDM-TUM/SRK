@@ -11,8 +11,7 @@
 class SRKSpinTracker
 {
 public:
-	SRKSpinTracker();
-	SRKSpinTracker(SRKGlobalField* inpGlobalField);
+	SRKSpinTracker(SRKGlobalField* theField);
 	virtual ~SRKSpinTracker();
 	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = NULL, std::vector<double>* stepTimes = NULL);
 	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=NULL, std::vector<double>* stepTimes=NULL);
@@ -36,6 +35,7 @@ protected:
 	double initialStepSize; //in time
 	int stepsTaken;
 	SRKEquationOfMotion theEquationOfMotion;
+
 
 	bool constStepper;
 

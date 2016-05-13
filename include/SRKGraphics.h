@@ -21,7 +21,7 @@ void convertTGraphErrorsToTXT(TGraphErrors* inpGraph, TString outputFileName);
 bool fileExists(TString strFileName);
 TString fileNameFromFullPath(TString fullPath);
 int countTString(TString inpString, char inpChar);
-int getNonCommentLine(ifstream& inpFileStream, TString& outString, char delim);
+int getNonCommentLine(std::ifstream& inpFileStream, TString& outString, char delim);
 TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim = '\n');
 double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping,double& errorOut);
 double meanVector(const std::vector<double>& theData);

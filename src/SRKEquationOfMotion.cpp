@@ -1,16 +1,19 @@
 #include "SRKEquationOfMotion.h"
-#include <math.h>
 #include <iostream>
 #include <iomanip>
 
 using namespace std;
 
-//#define SRKEQUATIONOFMOTIONDEBUG 1
+SRKEquationOfMotion::SRKEquationOfMotion()
+{
+	theGlobalField=NULL;
+	gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
+}
 
 SRKEquationOfMotion::SRKEquationOfMotion(SRKGlobalField* inpGlobalField)
 {
 	theGlobalField = inpGlobalField;
-	gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
+	gyromagneticRatio=0;
 }
 
 SRKEquationOfMotion::~SRKEquationOfMotion()
@@ -18,7 +21,12 @@ SRKEquationOfMotion::~SRKEquationOfMotion()
 
 }
 
-void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dxdt, const SRKSpinFloat /* t */)
+void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dxdt, const SRKSpinFloat t)
+{
+	SRKEqOfMNonRelLinearSpherical(x,dxdt,t);
+}
+
+void SRKEquationOfMotion::SRKEqOfMNonRelLinearSpherical(const SRKMotionState& x, SRKMotionState& dxdt, const SRKSpinFloat /* t */)
 {
 	posDouble[0] = static_cast<double> (x[0]);
 	posDouble[1] = static_cast<double> (x[1]);
@@ -57,7 +65,7 @@ void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dx
 	dxdt[6] = dphi;
 	dxdt[7] = dthetaPrime;
 
-#ifdef SRKEQUATIONOFMOTIONDEBUG
+#ifdef SRKEQOFMNONRELLINEARSPHEREICALDEBUG
 	cout << "InitialState: ";
 	printMotionState(x);
 	cout << "Delta: ";
