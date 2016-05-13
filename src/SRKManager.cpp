@@ -28,6 +28,7 @@ SRKManager::SRKManager()
 	b0FieldStrength = 1e-6;
 	e0FieldStrength = 1e6;
 	bGradFieldStrength = 0;
+	eGradFieldStrength = 0;
 	dipoleFieldStrength = 0;
 	dipolePosition.SetXYZ(0, 0, 0);
 	dipoleDirection.SetXYZ(0, 0, 1);
@@ -36,9 +37,9 @@ SRKManager::SRKManager()
 	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
-	defaultResultsDir="/home/mjbales/work/nedm/results/"; //only when resultsFilePath is not appropriate
-	resultsFilePath = defaultResultsDir + "test.root";
-	runID="RIDX";
+	defaultResultsDir="/data/nedm/results/"; //only when resultsFilePath is not appropriate
+	runID="test";
+	resultsFilePath = defaultResultsDir + runID+".root";
 	randomSeed=0;
 	phiStart=0; //For input via macros
 	thetaStart=0;

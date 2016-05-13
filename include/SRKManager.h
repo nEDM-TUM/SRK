@@ -123,8 +123,8 @@ public:
 	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
 	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
 	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
-	inline void setDefaultResultsDir(TString inp) {defaultResultsDir=inp;}
-	inline void setRunID(TString inp) {runID=inp;}
+	inline void setDefaultResultsDir(TString inp) {defaultResultsDir=inp; resultsFilePath = defaultResultsDir + runID+".root";}
+	inline void setRunID(TString inp) {runID=inp; resultsFilePath = defaultResultsDir + runID+".root";}
 	inline void setPhiStart(const double inp){phiStart=inp;}
 	inline void setThetaStart(const double inp){thetaStart=inp;}
 

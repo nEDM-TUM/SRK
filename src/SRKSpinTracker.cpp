@@ -13,14 +13,15 @@ typedef controlled_runge_kutta<error_stepper_type> controlled_stepper_type;
 
 //#define SRKSPINTRACKERDEBUG 1
 
-SRKSpinTracker::SRKSpinTracker(SRKGlobalField* inpGlobalField) :
-	theEquationOfMotion(inpGlobalField)
+SRKSpinTracker::SRKSpinTracker(SRKGlobalField* theField):
+	theEquationOfMotion(theField)
 {
 	eps_abs = 1.e-7;
 	eps_rel = 1.e-7;
 	initialStepSize = 0.01;
 	stepsTaken = 0;
 	constStepper = false;
+
 }
 
 SRKSpinTracker::~SRKSpinTracker()
