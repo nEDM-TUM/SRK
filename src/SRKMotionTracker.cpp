@@ -13,6 +13,7 @@
 #include <iostream>
 #include <cfloat>
 #include <vector>
+#include <limits>
 
 using namespace std;
 
@@ -28,7 +29,7 @@ SRKMotionTracker::SRKMotionTracker()
 	trackID = 0;
 	trackFile = NULL;
 	trackTree = NULL;
-	reflectionLimit = 1000000;
+	reflectionLimit = numeric_limits<int>::max();
 	use2D = false;
 	useGravity = false;
 	mass = 3.30e-025; //Hg mass kg

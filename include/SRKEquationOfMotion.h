@@ -1,6 +1,6 @@
 #ifndef SRKEQUATIONOFMOTION_H_
 #define SRKEQUATIONOFMOTION_H_
-//Abstract base class of equation of motion for BOOST ODE.
+//Class of equation of motion for BOOST ODE.
 //SRKSpinFloat is modifiable from double to other higher precision floating point standards
 //This can be seen in the commented out code.
 //Also included is definitions of the SRKMotionState which defines what state of the particle at a point in time.

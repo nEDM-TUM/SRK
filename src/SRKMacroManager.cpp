@@ -209,7 +209,6 @@ void SRKMacroManager::defineCommands()
 	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->setDiffuseReflectionProb(stod(inp));};
 	commandMap["setMeanVel"] = [&](string inp){	theManager->setMeanVel(stod(inp));};
 	commandMap["setReflectionLimit"] = [&](string inp)	{	theManager->setReflectionLimit(stod(inp));};
-	commandMap["setVelByOmegaSteyerl"] = [&](string inp){	theManager->setVelByOmegaSteyerl(stod(inp));};
 	commandMap["setChamberRadius"] = [&](string inp){	theManager->setChamberRadius(stod(inp));};
 	commandMap["setChamberHeight"] = [&](string inp){	theManager->setChamberHeight(stod(inp));};
 	commandMap["setChamberRotation"] = [&](string inp){	double x, y, z; sto3double(inp,x, y, z);theManager->setChamberRotation(x,y,z);};
@@ -218,7 +217,6 @@ void SRKMacroManager::defineCommands()
 	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};
 	commandMap["setEGradFieldStrength"] = [&](string inp){	theManager->setEGradFieldStrength(stod(inp));};
 	commandMap["setDipoleFieldStrength"] = [&](string inp){	theManager->setDipoleFieldStrength(stod(inp));};
-	commandMap["setAdditionalRandomVelZ"] = [&](string inp){	theManager->setAdditionalRandomVelZ(stod(inp));};
 	commandMap["setEPSAbs"] = [&](string inp){	theManager->setEPSAbs(stod(inp));};
 	commandMap["setEPSRel"] = [&](string inp){	theManager->setEPSRel(stod(inp));};
 	commandMap["setInitialStepSize"] = [&](string inp){	theManager->setInitialStepSize(stod(inp));};
@@ -239,6 +237,5 @@ void SRKMacroManager::defineCommands()
 	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};
 	commandMap["openMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
 	commandMap["loadParametersFromResultsFile"] = [&](string inp)	{	theManager->loadParametersFromResultsFile(inp);};
-	commandMap["outputDataForRIDs"] = [&](string inp)	{	theManager->outputDataForRIDs(inp);};
 
 }
