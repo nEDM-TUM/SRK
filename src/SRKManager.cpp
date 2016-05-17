@@ -19,14 +19,15 @@ SRKManager::SRKManager()
 {
 	resultsFile = NULL;
 	hitTree = NULL;
+
 	recordAllSteps = false;
 	useAltStepping = false;
 	parallelFields = true;
 	theGlobalField = new SRKGlobalField();
 	theSpinTracker = new SRKSpinTracker(theGlobalField);
 	theMotionTracker = new SRKMotionTracker();
-	b0FieldStrength = 1e-6;
-	e0FieldStrength = 1e6;
+	b0FieldStrength = 0;
+	e0FieldStrength = 0;
 	bGradFieldStrength = 0;
 	eGradFieldStrength = 0;
 	dipoleFieldStrength = 0;
@@ -37,9 +38,9 @@ SRKManager::SRKManager()
 	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
-	defaultResultsDir="/data/nedm/results/"; //only when resultsFilePath is not appropriate
-	runID="test";
-	resultsFilePath = defaultResultsDir + runID+".root";
+	defaultResultsDir=""; //only when resultsFilePath is not appropriate
+	resultsFilePath = defaultResultsDir + "srk_out.root";
+	runID="RIDX";
 	randomSeed=0;
 	phiStart=0; //For input via macros
 	thetaStart=0;
@@ -475,60 +476,6 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 
 
 	return theStats;
-}
-
-void SRKManager::outputDataForRIDs(TString rangeString)  //Format of int int
-{
-	stringstream theStringStream(rangeString.Data());
-	int startRID, finalRID;
-	theStringStream >> startRID >> finalRID;
-
-	TString outFilePath = defaultResultsDir + Form("Data_RID%i_RID%i.txt", startRID, finalRID);
-	ofstream outFile(outFilePath.Data());
-
-	outFile << "#RunID\tNumEvents\tDeltaOmega\tDeltaOmegaError\tFalseEDM\tFalseEDMError";
-	outFile << "\tphiStDev\tphiStDevError\tphiKurtosis\tphiKurtosisError\tphiSkewness\tphiSkewnessError\tphiTsallisPower\tPhiTsallisPowerError";
-	outFile << "\tthetaStDev\tthetaStDevError\tthetaKurtosis\tthetaKurtosisError\tthetaSkewness\tthetaSkewnessError\tthetaTsallisPower\tthetaTsallisPowerError";
-	outFile << "\tsZDetProb\tsZDetProbError";
-	outFile << endl;
-
-	for (int i = startRID; i < finalRID + 1; i++)
-	{
-		TString pFilePath = defaultResultsDir + Form("Results_RID%i_P.root", i);
-		TString aFilePath = defaultResultsDir + Form("Results_RID%i_A.root", i);
-		if(fileExistsAndNotZombie(pFilePath) && fileExistsAndNotZombie(aFilePath))
-		{
-
-			loadParametersFromResultsFile(defaultResultsDir + Form("Results_RID%i_P.root", i));
-
-			SRKRunStats parStats = calcResultsFileStats(pFilePath, true);
-			SRKRunStats antiStats = calcResultsFileStats(aFilePath, true);
-			double deltaPhaseMean = parStats.phiMean - antiStats.phiMean;
-			double deltaPhaseError = sqrt(parStats.phiError * parStats.phiError + antiStats.phiError * antiStats.phiError);
-			double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
-			double deltaOmega = deltaPhaseMean / getTimeLimit();
-			double deltaOmegaError = deltaPhaseError / getTimeLimit();
-
-			outFile << i << "\t" << parStats.numEvents << "\t" << deltaOmega << "\t" << deltaOmegaError << "\t" << deltaOmega * scaleFactor << "\t" << deltaOmegaError * scaleFactor;
-			outFile << "\t" << parStats.phiStDev << "\t" << parStats.phiError << "\t" << parStats.phiKurtosis << "\t" << parStats.phiKurtosisError << "\t" << parStats.phiSkewness << "\t" << parStats.phiSkewnessError << "\t"
-				<< parStats.phiTsallisPower << "\t" << parStats.phiTsallisPowerError;
-			outFile << "\t" << parStats.thetaStDev << "\t" << parStats.thetaError << "\t" << parStats.thetaKurtosis << "\t" << parStats.thetaKurtosisError << "\t" << parStats.thetaSkewness << "\t" << parStats.thetaSkewnessError << "\t"
-				<< parStats.thetaTsallisPower << "\t" << parStats.thetaTsallisPowerError;
-			outFile << "\t" << parStats.sZDetProb << "\t" << parStats.sZDetProb / sqrt(parStats.numEvents);
-		}
-		else  //File does not exist
-		{
-			cout << "Cannot find one or both files for RID" << i <<"!" << endl;
-			outFile << i;
-		}
-		if(i < finalRID)
-		{
-			outFile << endl;
-		}
-	}
-
-	outFile.close();
-
 }
 
 void SRKManager::trackSpinsDeltaOmega(int numTracks)

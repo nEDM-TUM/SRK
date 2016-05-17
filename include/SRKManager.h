@@ -55,9 +55,7 @@ public:
 	bool trackSpins(int numTracks);
 	void trackSpinsDeltaOmega(int numTracks);
 	void loadParametersFromResultsFile(TString filePath);
-	void outputDataForRIDs(TString rangeString); //Format of int
 	void makeTracks(int numTracks);
-	//TGraphErrors* trackSpinsDeltaOmegaSteyerlPlot(int numTracksPerPoint, TString runNameString, int numOmega, double omegaStart, double omegaEnd, bool useLog = true, int approximateReflectionsFixedTime = 0);
 
 	//Getters
 	inline bool getRecordAllSteps(){return recordAllSteps;}
@@ -79,11 +77,17 @@ public:
 	inline double getPhaseError(){return phaseError;}
 	inline double getPhiStart(){return phiStart;}
 	inline double getThetaStart(){return thetaStart;}
+	inline int getRandomSeed(){ return randomSeed;}
+    inline TString getVelProfHistPath(){return theMotionTracker->getVelProfHistPath();}
+    inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
+    inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
+    inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
 
 	inline double getGyromagneticRatio(){return theSpinTracker->getGyromagneticRatio();}
 	inline int getStepsTaken(){return theSpinTracker->getStepsTaken();}
-
 	inline bool getConstStepper(){return theSpinTracker->getConstStepper();}
+	inline double getEPSAbs(){return theSpinTracker->getEPSAbs();}
+	inline double getEPSRel(){return theSpinTracker->getEPSRel();}
 
 	inline double getTimeLimit(){return theMotionTracker->getTimeLimit();}
 	inline double getDiffuseReflectionProb(){return theMotionTracker->getDiffuseReflectionProb();}
@@ -96,17 +100,8 @@ public:
 	inline bool getManualTracking(){return theMotionTracker->getManualTracking();}
 	inline TVector3 getPos(){return theMotionTracker->getPos();}
 	inline TVector3 getVel(){return theMotionTracker->getVel();}
-	inline int getRandomSeed(){ return randomSeed;}
-	inline TString getVelProfHistPath(){return theMotionTracker->getVelProfHistPath();}
-	inline double getEPSAbs(){return theSpinTracker->getEPSAbs();}
-	inline double getEPSRel(){return theSpinTracker->getEPSRel();}
-	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
-	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
-	inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
 	inline double getMass(){return theMotionTracker->getMass();}
 	inline double getMeanFreePath(){return theMotionTracker->getMeanFreePath();}
-
-
 
 	//Setters
 	inline void setRecordAllSteps(bool inp){recordAllSteps=inp;}
@@ -127,6 +122,7 @@ public:
 	inline void setRunID(TString inp) {runID=inp; resultsFilePath = defaultResultsDir + runID+".root";}
 	inline void setPhiStart(const double inp){phiStart=inp;}
 	inline void setThetaStart(const double inp){thetaStart=inp;}
+	inline void setRandomSeed(const int inp){ randomSeed=inp;}
 
 	inline void setGyromagneticRatio(double inp){theSpinTracker->setGyromagneticRatio(inp);}
 	inline void setEPSAbs(double inp){theSpinTracker->setEPSAbs(inp);}
@@ -147,13 +143,9 @@ public:
 	inline void setManualTracking(bool inp){ theMotionTracker->setManualTracking(inp);}
 	inline void setPos(const TVector3& inp){ theMotionTracker->setPos(inp);}
 	inline void setVel(const TVector3& inp){ theMotionTracker->setVel(inp);}
-	inline void setRandomSeed(const int inp){ randomSeed=inp;}
 	inline void setVelProfHistPath(const TString inp){theMotionTracker->setVelProfHistPath(inp);}
 	inline void setMass(const double inp){theMotionTracker->setMass(inp);}
 	inline void setMeanFreePath(const double inp){theMotionTracker->setMeanFreePath(inp);}
-
-
-
 
 protected:
 	void createResultsFile(TString resultsFilePath);
