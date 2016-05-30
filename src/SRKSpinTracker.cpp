@@ -12,16 +12,18 @@ typedef runge_kutta_dopri5<SRKMotionState, SRKSpinFloat> error_stepper_type;
 typedef controlled_runge_kutta<error_stepper_type> controlled_stepper_type;
 
 //#define SRKSPINTRACKERDEBUG 1
-
-SRKSpinTracker::SRKSpinTracker(SRKGlobalField* theField):
-	theEquationOfMotion(theField)
+SRKSpinTracker::SRKSpinTracker()
 {
 	eps_abs = 1.e-7;
 	eps_rel = 1.e-7;
 	initialStepSize = 0.01;
 	stepsTaken = 0;
 	constStepper = false;
-
+}
+SRKSpinTracker::SRKSpinTracker(SRKGlobalField* theField):
+	SRKSpinTracker()
+{
+	theEquationOfMotion.setGlobalField(theField);
 }
 
 SRKSpinTracker::~SRKSpinTracker()
@@ -39,7 +41,7 @@ void SRKSpinTracker::trackSpin(SRKMotionState& theState, double timeToTrack, std
 	printMotionState(theState);
 #endif
 
-	if(stepRecord != NULL)
+	if(stepRecord != nullptr)
 	{
 		if(constStepper)
 		{
@@ -112,7 +114,7 @@ void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack,
 			{
 				theState[8] += dt;
 				stepsTaken++;
-				if(stepRecord != NULL && stepTimes != NULL)
+				if(stepRecord != nullptr && stepTimes != nullptr)
 				{
 					stepRecord->push_back(theState);
 					stepTimes->push_back(static_cast<double>(theState[8]));
@@ -132,7 +134,7 @@ void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack,
 			{
 				theState[8] += dt;
 				stepsTaken++;
-				if(stepRecord != NULL && stepTimes != NULL)
+				if(stepRecord != nullptr && stepTimes != nullptr)
 				{
 					stepRecord->push_back(theState);
 					stepTimes->push_back(static_cast<double>(theState[8]));

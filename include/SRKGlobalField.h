@@ -1,28 +1,24 @@
 #ifndef SRKGlobalField_HH
 #define SRKGlobalField_HH 1
 
-//  SRKGlobalField - handles the global ElectroMagnetic and Gravity field
+////////////////////////////////////////////////////////////////
+/// SRKGlobalField - handles the global ElectroMagnetic and Gravity field
 //
-//  There is a single SRKGlobalField object.
-//
-//  The field from each individual element is given by a
-//  SRKField object. Any number of overlapping SRKField
-//  objects can be added to the global field. Any element that
-//  represents an element with an EMG field must add the appropriate
-//  SRKField to the global GlobalField object.
+/// The field from each individual element is given by a
+/// SRKField object. Any number of overlapping SRKField
+/// objects can be added to the global field. Any element that
+/// represents an element with an EMG field must add the appropriate
+/// SRKField to the global GlobalField object.
+////////////////////////////////////////////////////////////////
 
 #include "SRKField.h"
-#include "SRKInterpolatedField.h"
-#include "SRKDipoleField.h"
-#include "SRKUniformField.h"
-#include "SRKGradientField.h"
 
 #include <vector>
 #include <string>
 
 const int MAX_SRK_NUM_FIELDS = 1000;
 
-class SRKGlobalField: public SRKField
+class SRKGlobalField
 {
 
 public:
@@ -30,7 +26,7 @@ public:
 	SRKGlobalField();
 	SRKGlobalField(const SRKGlobalField&);
 
-	virtual ~SRKGlobalField();
+	~SRKGlobalField();
 
 	SRKGlobalField& operator=(const SRKGlobalField&);
 
@@ -39,14 +35,11 @@ public:
 	/// GetFieldValue() returns the field value at a given point[].
 	/// field is really field[6]: Bx,By,Bz,Ex,Ey,Ez,Gx,Gy,Gz
 	/// point[] is in global coordinates: x,y,z,t.
-	void addFieldValue(const double* point, double* outField) const;
+	void getFieldValue(const double* point, double* outField) const;
 
 	/// addField() adds the SRKField object for a single
 	///  to the global field.
-	void addField(SRKField* f)
-	{
-		theFieldList.push_back(f);
-	}
+	void addField(SRKField* f);
 
 	/// clear() removes all SRKField-s from the global object,
 	/// and destroys them. Used before the geometry is completely
@@ -71,9 +64,6 @@ public:
     inline void setFieldFrequency(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].frequency=inp;}
     inline void setFieldSpaceDim(int inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].spaceDim=inp;}
     inline void setFieldFieldDim(int inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].fieldDim=inp;}
-    inline void setFieldAngleX(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].angleX=inp;}
-    inline void setFieldAngleY(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].angleY=inp;}
-    inline void setFieldAngleZ(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].angleZ=inp;}
     inline void setFieldClass(int inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].fieldClass=static_cast<FieldClass>(inp);}
     inline void setFieldType(int inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].fieldType=static_cast<FieldType>(inp);}
     inline void setFieldSymmetryX(bool inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].symmetry[0]=inp;}
@@ -82,19 +72,11 @@ public:
     inline void setFieldUseCubicInterpolation(bool inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].useCubicInterpolation=inp;}
     inline void setFieldOffset(TVector3 inp){if(currentFieldSettingsToModify >= 0) {fieldSettingsToLoad[currentFieldSettingsToModify].offset=inp;fieldSettingsToLoad[currentFieldSettingsToModify].centerPos+=inp;}}
 
-
 protected:
 
-	static SRKGlobalField* object;
+	std::vector<SRKField*> theFields;  //A vector of SRK Fields
 
-	int numFields;
-	bool first;
-
-	std::vector<SRKField*> theFieldList;
-
-	SRKField** theFieldArray;
-
-	std::vector<FieldSettings> fieldSettingsToLoad; //Settings to load magnetic or electric fields (only created during initialization);
+	std::vector<SRKFieldSettings> fieldSettingsToLoad; //Settings to load magnetic or electric fields (only created during initialization);
 	int currentFieldSettingsToModify;  //Current fieldSettingsToLoad to modify with macro commands...stupid macro command limitations
 
 };

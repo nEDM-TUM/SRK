@@ -17,15 +17,12 @@ using namespace std;
 
 SRKManager::SRKManager()
 {
-	resultsFile = NULL;
-	hitTree = NULL;
+	resultsTree = nullptr;
 
 	recordAllSteps = false;
 	useAltStepping = false;
 	parallelFields = true;
-	theGlobalField = new SRKGlobalField();
-	theSpinTracker = new SRKSpinTracker(theGlobalField);
-	theMotionTracker = new SRKMotionTracker();
+	theSpinTracker.setGlobalField(&theGlobalField);
 	b0FieldStrength = 0;
 	e0FieldStrength = 0;
 	bGradFieldStrength = 0;
@@ -35,66 +32,66 @@ SRKManager::SRKManager()
 	dipoleDirection.SetXYZ(0, 0, 1);
 	e0FieldDirection.SetXYZ(0, 0, 1);
 	b0FieldDirection.SetXYZ(0, 0, 1);
-	deltaPhaseMean=deltaPhaseError=phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
+	deltaPhaseMean = deltaPhaseError = phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
-	defaultResultsDir=""; //only when resultsFilePath is not appropriate
+	defaultResultsDir = ""; //only when resultsFilePath is not appropriate
 	resultsFilePath = defaultResultsDir + "srk_out.root";
-	runID="RIDX";
-	randomSeed=0;
-	phiStart=0; //For input via macros
-	thetaStart=0;
+	runID = "RIDX";
+	randomSeed = 0;
+	phiStart = 0; //For input via macros
+	thetaStart = 0;
 }
 
 SRKManager::~SRKManager()
 {
-
-	delete theGlobalField;
-	delete theSpinTracker;
-	delete theMotionTracker;
+	if(resultsFile.IsOpen())
+	{
+		closeResultsFile();
+	}
 }
 
 void SRKManager::createResultsFile(TString resultsFilePath)
 {
-	if(resultsFile != NULL && resultsFile->IsOpen())
+	if(resultsFile.IsOpen())
 	{
-		resultsFile->Close();
+		resultsFile.Close();
 	}
-	resultsFile = new TFile(resultsFilePath, "RECREATE");
+	resultsFile.Open(resultsFilePath, "RECREATE");
 
-	if(resultsFile->IsZombie() || !resultsFile->IsOpen())
+	if(resultsFile.IsZombie() || !resultsFile.IsOpen())
 	{
 		cout << "Error opening results file: " << resultsFilePath << endl;
 		return;
 
 	}
-	resultsFile->cd();
-	hitTree = new TTree("hitTree", "Initial and final states after reflections and spin tracking");
-	hitTree->Branch("trackID", &trackID, "trackID/I");
-	hitTree->Branch("time0", &time0, "time0/D");
-	hitTree->Branch("pos0", &pos0);
-	hitTree->Branch("vel0", &vel0);
-	hitTree->Branch("phi0", &phi0, "phi0/D");
-	hitTree->Branch("theta0", &theta0, "theta0/D");
-	hitTree->Branch("time", &time, "time/D");
-	hitTree->Branch("pos", &pos);
-	hitTree->Branch("vel", &vel);
-	hitTree->Branch("phi", &phi, "phi/D");
-	hitTree->Branch("theta", &theta, "theta/D");
+	resultsFile.cd();
+	resultsTree = new TTree("hitTree", "Initial and final states after reflections and spin tracking");
+	resultsTree->Branch("trackID", &trackID, "trackID/I");
+	resultsTree->Branch("time0", &time0, "time0/D");
+	resultsTree->Branch("pos0", &pos0);
+	resultsTree->Branch("vel0", &vel0);
+	resultsTree->Branch("phi0", &phi0, "phi0/D");
+	resultsTree->Branch("theta0", &theta0, "theta0/D");
+	resultsTree->Branch("time", &time, "time/D");
+	resultsTree->Branch("pos", &pos);
+	resultsTree->Branch("vel", &vel);
+	resultsTree->Branch("phi", &phi, "phi/D");
+	resultsTree->Branch("theta", &theta, "theta/D");
 
 }
 
 void SRKManager::closeResultsFile()
 {
 
-	TList* userInfoList=hitTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
+	TList* userInfoList = resultsTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
 
-	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) getRecordAllSteps())));
-	userInfoList->Add(new TNamed("UseAltStepping", Form("%i", (int) getUseAltStepping())));
-	userInfoList->Add(new TNamed("ParallelFields", Form("%i", (int) getParallelFields())));
-	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) getConstStepper())));
-	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) getUse2D())));
-	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) getManualTracking())));
+	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) isRecordAllSteps())));
+	userInfoList->Add(new TNamed("UseAltStepping", Form("%i", (int) isUseAltStepping())));
+	userInfoList->Add(new TNamed("ParallelFields", Form("%i", (int) isParallelFields())));
+	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) isConstStepper())));
+	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) isUse2D())));
+	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) isManualTracking())));
 	userInfoList->Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
 	userInfoList->Add(new TNamed("AdditionalRandomVelZ", Form("%e", getAdditionalRandomVelZ())));
 	userInfoList->Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
@@ -124,30 +121,28 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
 	userInfoList->Add(new TNamed("B0FieldDirection", Form("%f %f %f", getB0FieldDirection().X(), getB0FieldDirection().Y(), getB0FieldDirection().Z())));
 
-	resultsFile->Write("", TObject::kOverwrite);
+	resultsFile.Write("", TObject::kOverwrite);
 
-	resultsFile->Close();
-	delete resultsFile;
-	resultsFile = NULL;
-	hitTree = NULL;
+	resultsFile.Close();
+	resultsTree = nullptr;
 }
 
 void SRKManager::loadParametersFromResultsFile(TString filePath)
 {
-	TFile theFile(filePath,"READ");
+	TFile theFile(filePath, "READ");
 	TTree* theTree = (TTree*) theFile.Get("hitTree");
-	TList* userInfoList=theTree->GetUserInfo();
+	TList* userInfoList = theTree->GetUserInfo();
 	SRKMacroManager tempManager(this);
 
-	for(int i=0;i<userInfoList->GetEntries();i++)
+	for (int i = 0; i < userInfoList->GetEntries(); i++)
 	{
-		TNamed* par=(TNamed*) userInfoList->At(i);
-		string command=string("set")+par->GetName();
+		TNamed* par = (TNamed*) userInfoList->At(i);
+		string command = string("set") + par->GetName();
 		string value = par->GetTitle();
 		if(command != "setStepsTaken")
 		{
 			cout << "SRK: " << command << " " << value << endl;
-			tempManager.runMacroCommand(command,value);
+			tempManager.runMacroCommand(command, value);
 		}
 	}
 	theFile.Close();
@@ -155,9 +150,8 @@ void SRKManager::loadParametersFromResultsFile(TString filePath)
 
 void SRKManager::writeEvent()
 {
-	hitTree->Fill();
+	resultsTree->Fill();
 }
-
 
 void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
 {
@@ -172,11 +166,10 @@ void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vec
 
 void SRKManager::makeTracks(int numTracks)
 {
-	theMotionTracker->makeTracks(numTracks,trackFilePath);
+	theMotionTracker.makeTracks(numTracks, trackFilePath);
 }
 
-
-bool SRKManager::trackSpins(int numTracks)
+bool SRKManager::precessSpinsAlongTracks(int numTracks)
 {
 	bool useDynamic = trackFilePath == "!dynamic";
 
@@ -187,15 +180,15 @@ bool SRKManager::trackSpins(int numTracks)
 	{
 		gRandom->SetSeed(randomSeed);
 	}
-	cout << "Using random seed: " << gRandom->GetSeed()<< endl;
+	cout << "Using random seed: " << gRandom->GetSeed() << endl;
 
 	if(!useDynamic)
 	{
-		theMotionTracker->loadTrackFile(trackFilePath);
+		theMotionTracker.loadTrackFile(trackFilePath);
 	}
 	else
 	{
-		theMotionTracker->makeCylinderGeometry();
+		theMotionTracker.makeCylinderGeometry();
 	}
 
 	TVector3 pos;
@@ -209,8 +202,8 @@ bool SRKManager::trackSpins(int numTracks)
 
 	SRKMotionState theState(9);
 	SRKMotionState initialState(9);
-	std::vector<SRKMotionState>* stepRecord = NULL; //Used for recording all steps
-	std::vector<double>* stepTimes = NULL; //Used for recording all steps
+	std::vector<SRKMotionState>* stepRecord = nullptr; //Used for recording all steps
+	std::vector<double>* stepTimes = nullptr; //Used for recording all steps
 	if(recordAllSteps)
 	{
 		stepRecord = new std::vector<SRKMotionState>;
@@ -224,14 +217,14 @@ bool SRKManager::trackSpins(int numTracks)
 		//Starting point
 		if(useDynamic)
 		{
-			if(theMotionTracker->getManualTracking())
+			if(theMotionTracker.getManualTracking())
 			{
-				pos = theMotionTracker->getPos();
-				vel = theMotionTracker->getVel();
+				pos = theMotionTracker.getPos();
+				vel = theMotionTracker.getVel();
 			}
 			else
 			{
-				theMotionTracker->getRandomVelocityVectorAndPosition(pos, vel);
+				theMotionTracker.getRandomVelocityVectorAndPosition(pos, vel);
 			}
 
 			trackID = i;
@@ -240,7 +233,7 @@ bool SRKManager::trackSpins(int numTracks)
 		}
 		else
 		{
-			theMotionTracker->getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
+			theMotionTracker.getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
 		}
 		updateMotionStatePosVel(theState, pos, vel, currentTime);
 		theState[6] = phiStart; //Phi
@@ -254,21 +247,21 @@ bool SRKManager::trackSpins(int numTracks)
 		{
 			if(useDynamic)
 			{
-				lastTrack = theMotionTracker->getNextTrackingPoint(pos, vel, currentTime);
+				lastTrack = theMotionTracker.getNextTrackingPoint(pos, vel, currentTime);
 			}
 			else
 			{
-				theMotionTracker->getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
+				theMotionTracker.getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
 
 			}
 
 			if(useAltStepping)
 			{
-				theSpinTracker->trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+				theSpinTracker.trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
 			else
 			{
-				theSpinTracker->trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+				theSpinTracker.trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
 			updateMotionStatePosVel(theState, pos, vel, currentTime); //Use the next reflection point for next step
 			if(lastTrack) //Record at last point
@@ -287,7 +280,7 @@ bool SRKManager::trackSpins(int numTracks)
 			}
 		} while (!lastTrack);
 	}
-	theMotionTracker->closeTrackFile();
+	theMotionTracker.closeTrackFile();
 	closeResultsFile();
 	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError); //Prints mean and stdev, no plot
 
@@ -296,13 +289,13 @@ bool SRKManager::trackSpins(int numTracks)
 	cout << "Mean Phase: " << setprecision(15) << phaseMean << " +/- " << phaseError << endl;
 	cout << "-----------------" << endl;
 
-	theMotionTracker->closeTrackFile();
+	theMotionTracker.closeTrackFile();
 
-	if(stepRecord != NULL)
+	if(stepRecord != nullptr)
 	{
 		delete stepRecord;
 	}
-	if(stepTimes != NULL)
+	if(stepTimes != nullptr)
 	{
 		delete stepTimes;
 	}
@@ -343,45 +336,49 @@ void SRKManager::setFinalState(SRKMotionState& finalState)
 
 void SRKManager::loadFields()
 {
-	theGlobalField->setCurrentFieldSettingsToModify(0); //B0 Field
-	theGlobalField->setFieldScalingValue(b0FieldStrength);
-	theGlobalField->setFieldDirection(b0FieldDirection);
+	theGlobalField.setCurrentFieldSettingsToModify(0); //B0 Field
+	theGlobalField.setFieldScalingValue(b0FieldStrength);
+	theGlobalField.setFieldDirection(b0FieldDirection);
 
-	theGlobalField->setCurrentFieldSettingsToModify(1); //E0 Field
-	theGlobalField->setFieldType(FIELD_ELECTRIC);
-	theGlobalField->setFieldDirection(e0FieldDirection);
+	theGlobalField.setCurrentFieldSettingsToModify(1); //E0 Field
+	theGlobalField.setFieldType(FIELD_ELECTRIC);
+	theGlobalField.setFieldDirection(e0FieldDirection);
 
 	if(parallelFields)
-		theGlobalField->setFieldScalingValue(e0FieldStrength);
+	{
+		theGlobalField.setFieldScalingValue(e0FieldStrength);
+	}
 	else
-		theGlobalField->setFieldScalingValue(-e0FieldStrength);
+	{
+		theGlobalField.setFieldScalingValue(-e0FieldStrength);
+	}
 
-	theGlobalField->setCurrentFieldSettingsToModify(2); //B Grad Field
-	theGlobalField->setFieldClass(FIELDCLASS_GRADIENT);
-	theGlobalField->setFieldScalingValue(bGradFieldStrength);
-	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
+	theGlobalField.setCurrentFieldSettingsToModify(2); //B Grad Field
+	theGlobalField.setFieldClass(FIELDCLASS_GRADIENT);
+	theGlobalField.setFieldScalingValue(bGradFieldStrength);
+	theGlobalField.setFieldDirection(TVector3(0, 0, 1));
 
-	theGlobalField->setCurrentFieldSettingsToModify(3); //B Dipole
-	theGlobalField->setFieldClass(FIELDCLASS_DIPOLE);
-	theGlobalField->setFieldScalingValue(dipoleFieldStrength);
-	theGlobalField->setFieldMoment(dipoleDirection);
-	theGlobalField->setFieldCenterPos(dipolePosition);
+	theGlobalField.setCurrentFieldSettingsToModify(3); //B Dipole
+	theGlobalField.setFieldClass(FIELDCLASS_DIPOLE);
+	theGlobalField.setFieldScalingValue(dipoleFieldStrength);
+	theGlobalField.setFieldMoment(dipoleDirection);
+	theGlobalField.setFieldCenterPos(dipolePosition);
 
-	theGlobalField->setCurrentFieldSettingsToModify(4); //E Grad Field
-	theGlobalField->setFieldType(FIELD_ELECTRIC);
-	theGlobalField->setFieldClass(FIELDCLASS_GRADIENT);
-	theGlobalField->setFieldScalingValue(eGradFieldStrength);
-	theGlobalField->setFieldDirection(TVector3(0, 0, 1));
+	theGlobalField.setCurrentFieldSettingsToModify(4); //E Grad Field
+	theGlobalField.setFieldType(FIELD_ELECTRIC);
+	theGlobalField.setFieldClass(FIELDCLASS_GRADIENT);
+	theGlobalField.setFieldScalingValue(eGradFieldStrength);
+	theGlobalField.setFieldDirection(TVector3(0, 0, 1));
 
-	theGlobalField->updateField();
+	theGlobalField.updateField();
 
 }
 
 void SRKManager::calcDeltaPhaseMean(TString inpRunID)
 {
-	double parMean,parError,antiMean,antiError;
-	parMean=makeMeanPhasePlot(defaultResultsDir+"Results_"+inpRunID+"_P.root", "", true, parError); //Prints mean and stdev, no plot
-	antiMean=makeMeanPhasePlot(defaultResultsDir+"Results_"+inpRunID+"_A.root", "", true, antiError);//Prints mean and stdev, no plot
+	double parMean, parError, antiMean, antiError;
+	parMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_P.root", "", true, parError); //Prints mean and stdev, no plot
+	antiMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_A.root", "", true, antiError); //Prints mean and stdev, no plot
 	deltaPhaseMean = parMean - antiMean;
 	deltaPhaseError = sqrt(parError * parError + antiError * antiError);
 
@@ -435,15 +432,15 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 	theStats.phiError = theStats.phiStDev / sqrt((double) theStats.numEvents);
 	theStats.thetaError = theStats.thetaStDev / sqrt((double) theStats.numEvents);
 
-	TH1D phiHist("phiHist", "phiHist", 10000, theStats.phiMean - theStats.phiStDev*5., theStats.phiMean + theStats.phiStDev*5.);
-	TH1D thetaHist("thetaHist", "thetaHist", 10000,-theStats.thetaStDev*5., theStats.thetaStDev*5.);
+	TH1D phiHist("phiHist", "phiHist", 10000, theStats.phiMean - theStats.phiStDev * 5., theStats.phiMean + theStats.phiStDev * 5.);
+	TH1D thetaHist("thetaHist", "thetaHist", 10000, -theStats.thetaStDev * 5., theStats.thetaStDev * 5.);
 
 	for (int i = 0; i < theStats.numEvents; ++i)
 	{
 		phiHist.Fill(phiVec[i]);
 		thetaHist.Fill(thetaVec[i]);
 
-		theStats.sZDetProb += calculateSzDetectionProbability(phiVec[i]-theStats.phiMean,thetaVec[i]);
+		theStats.sZDetProb += calculateSzDetectionProbability(phiVec[i] - theStats.phiMean, thetaVec[i]);
 	}
 
 	theStats.sZDetProb /= theStats.numEvents;
@@ -474,36 +471,33 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 	theStats.thetaTsallisPower = thetaTsallisFunc.GetParameter(2);
 	theStats.thetaTsallisPowerError = thetaTsallisFunc.GetParError(2);
 
-
 	return theStats;
 }
 
-void SRKManager::trackSpinsDeltaOmega(int numTracks)
+void SRKManager::precessSpinsAlongTracksParAndAnti(int numTracks)
 {
 	//Run Parallel
 	setParallelFields(true);
 	resultsFilePath = defaultResultsDir + "Results_" + runID + "_P.root";
-	trackSpins(numTracks);
-
+	precessSpinsAlongTracks(numTracks);
 
 	//Run Anti-Parallel
 	setParallelFields(false);
 	resultsFilePath = defaultResultsDir + "Results_" + runID + "_A.root";
-	trackSpins(numTracks);
+	precessSpinsAlongTracks(numTracks);
 
 	calcDeltaPhaseMean(runID);
-	double deltaOmega=deltaPhaseMean/getTimeLimit();
-	double deltaOmegaError=deltaPhaseError/getTimeLimit();
-
+	double deltaOmega = deltaPhaseMean / getTimeLimit();
+	double deltaOmegaError = deltaPhaseError / getTimeLimit();
 
 	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError << endl;
 	double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);
-	cout << "False EDM [e cm]: " << scientific << setprecision(5) << deltaOmega*scaleFactor << " +/- " << deltaOmegaError*scaleFactor << endl;
+	cout << "False EDM [e cm]: " << scientific << setprecision(5) << deltaOmega * scaleFactor << " +/- " << deltaOmegaError * scaleFactor << endl;
 	double zetaEtaOmega0 = getZeta() * getEta() * getOmega0();
 
 	if(bGradFieldStrength > 0)
 	{
-		cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << deltaOmega/zetaEtaOmega0 << " +/- " << deltaOmegaError/zetaEtaOmega0 << endl;
+		cout << "Delta \\omega_Steyerl: " << scientific << setprecision(5) << deltaOmega / zetaEtaOmega0 << " +/- " << deltaOmegaError / zetaEtaOmega0 << endl;
 		cout.unsetf(ios_base::floatfield);
 	}
 
@@ -535,10 +529,9 @@ bool SRKManager::fileExists(TString strFileName)
 bool SRKManager::fileExistsAndNotZombie(TString strFileName)
 {
 
-	TFile theFile(strFileName,"READ");
-	bool isZombie=theFile.IsZombie();
+	TFile theFile(strFileName, "READ");
+	bool isZombie = theFile.IsZombie();
 	theFile.Close();
 	return fileExists(strFileName) && !isZombie;
 }
-
 

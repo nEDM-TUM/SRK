@@ -13,7 +13,11 @@
 #include "TH1.h"
 #include "TROOT.h"
 #include "TCanvas.h"
-
+////////////////////////////////////////////////////////////////
+/// functions related to graphics or histograms
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
 
 void convertTH1ToTXT(TH1* inpHist, TString outputFileName);
 void convertXYDataWErrorToTXT(int numData, double* x, double* y, double* eX, double* eY, TString titleString, TString outputFileName);

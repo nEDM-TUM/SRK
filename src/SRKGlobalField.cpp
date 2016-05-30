@@ -1,47 +1,18 @@
-//
-// ********************************************************************
-// * License and Disclaimer                                           *
-// *                                                                  *
-// * The  Geant4 software  is  copyright of the Copyright Holders  of *
-// * the Geant4 Collaboration.  It is provided  under  the terms  and *
-// * conditions of the Geant4 Software License,  included in the file *
-// * LICENSE and available at  http://cern.ch/geant4/license .  These *
-// * include a list of copyright holders.                             *
-// *                                                                  *
-// * Neither the authors of this software system, nor their employing *
-// * institutes,nor the agencies providing financial support for this *
-// * work  make  any representation or  warranty, express or implied, *
-// * regarding  this  software system or assume any liability for its *
-// * use.  Please see the license in the file  LICENSE  and URL above *
-// * for the full disclaimer and the limitation of liability.         *
-// *                                                                  *
-// * This  code  implementation is the result of  the  scientific and *
-// * technical work of the GEANT4 collaboration.                      *
-// * By using,  copying,  modifying or  distributing the software (or *
-// * any work based  on the software)  you  agree  to acknowledge its *
-// * use  in  resulting  scientific  publications,  and indicate your *
-// * acceptance of all terms of the Geant4 Software license.          *
-// ********************************************************************
-//
-//
-//
+#include "SRKGlobalField.h"
 
 #include <time.h>
 #include <iostream>
 
-#include "SRKGlobalField.h"
+#include "SRKInterpolatedField.h"
+#include "SRKDipoleField.h"
+#include "SRKUniformField.h"
+#include "SRKGradientField.h"
 
 using namespace std;
 
-SRKGlobalField::SRKGlobalField() :
-	SRKField()
+SRKGlobalField::SRKGlobalField()
 {
-	fs.fieldType = FIELD_MAGNETIC; //Highest field type used;
-
 	currentFieldSettingsToModify = -1;
-	first = true;
-	numFields=0;
-	theFieldArray=NULL;
 }
 
 SRKGlobalField::~SRKGlobalField()
@@ -51,10 +22,6 @@ SRKGlobalField::~SRKGlobalField()
 
 void SRKGlobalField::updateField()
 {
-	first = true;
-
-	numFields = 0;
-	theFieldArray = 0;
 
 	clear();
 	currentFieldSettingsToModify = -1;
@@ -63,45 +30,33 @@ void SRKGlobalField::updateField()
 
 }
 
-void SRKGlobalField::addFieldValue(const double* point, double* outField) const
+void SRKGlobalField::addField(SRKField* f)
 {
+	theFields.push_back(f);
+}
 
-	// protect against Geant4 bug that calls us with point[] NaN.
-	if(point[0] != point[0]) return;
-
-	// (can't use nfp or outField, as they may change)
-	if(first) ((SRKGlobalField*) this)->setupArray();   // (cast away const)
-
-	for (int i = 0; i < numFields; ++i)
+void SRKGlobalField::getFieldValue(const double* point, double* outField) const
+{
+	for (unsigned int i = 0; i < theFields.size(); ++i)
 	{
 
-		theFieldArray[i]->addFieldValue(point, outField);
+		theFields[i]->addFieldValue(point, outField);
 
 	}
-
 }
 
 //clears the field list NOT the fieldSettingsToLoad
 void SRKGlobalField::clear()
 {
+	for (unsigned int i = 0; i < theFields.size(); ++i)
+	{
 
-	theFieldList.clear();
+		delete theFields[i];
 
-	if(theFieldArray) delete[] theFieldArray;
+	}
 
-	first = true;
+	theFields.clear();
 
-	numFields = 0;
-	theFieldArray = NULL;
-}
-
-void SRKGlobalField::setupArray()
-{
-	first = false;
-	numFields = theFieldList.size();
-	theFieldArray = new SRKField*[numFields + 1]; // add 1 so it's never 0
-	for (int i = 0; i < numFields; ++i)
-		theFieldArray[i] = theFieldList[i];
 }
 
 void SRKGlobalField::setCurrentFieldSettingsToModify(int inp)
@@ -143,14 +98,7 @@ void SRKGlobalField::constructFields()
 				addField(new SRKGradientField(fieldSettingsToLoad[i]));
 			}
 		}
-		if(fieldSettingsToLoad[i].fieldType == FIELD_GRAVITY)
-		{
-			fs.fieldType = FIELD_GRAVITY; //Highest field type used;
-		}
-		else if(fieldSettingsToLoad[i].fieldType == FIELD_ELECTRIC)
-		{
-			fs.fieldType = FIELD_ELECTRIC; //Highest field type used;
-		}
+
 	}
 	return;
 }

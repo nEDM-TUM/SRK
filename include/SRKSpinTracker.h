@@ -11,10 +11,11 @@
 class SRKSpinTracker
 {
 public:
+	SRKSpinTracker();
 	SRKSpinTracker(SRKGlobalField* theField);
 	virtual ~SRKSpinTracker();
-	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = NULL, std::vector<double>* stepTimes = NULL);
-	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=NULL, std::vector<double>* stepTimes=NULL);
+	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = nullptr, std::vector<double>* stepTimes = nullptr);
+	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=nullptr, std::vector<double>* stepTimes=nullptr);
 
 	inline void resetStepsTaken(){stepsTaken=0;}
 	inline void setEPSAbs(double inp){eps_abs =inp;}
@@ -22,6 +23,7 @@ public:
 	inline void setInitialStepSize(double inp){initialStepSize=inp;}
 	inline void setConstStepper(bool inp){constStepper=inp;}
 	inline void setGyromagneticRatio(double inp){theEquationOfMotion.setGyromagneticRatio(inp);}
+	inline void setGlobalField(SRKGlobalField* inp){theEquationOfMotion.setGlobalField(inp);}
 
 	inline double getEPSAbs(){return eps_abs;}
 	inline double getEPSRel(){return eps_rel;}

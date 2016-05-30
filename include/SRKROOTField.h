@@ -1,13 +1,14 @@
-/////////////////////////////////////////////////
-//SRKSRKROOTField- by Matthew Bales 2014
-//
-//Contains a class that defines a vector/scalar field in 2D cylindrical symmetry or in 3D
-//and can either linearly or cubically interpolate
-//Requries that the ROOT library be installed and linked
-///////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+/// class SRKROOTField
+/// Contains a class that defines a vector/scalar field in 2D cylindrical symmetry or in 3D
+/// and can either linearly or cubically interpolate
+/// Requires that the ROOT library be installed and linked
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
 
-#ifndef SRKSRKROOTField_HH
-#define SRKSRKROOTField_HH
+#ifndef SRKROOTField_HH
+#define SRKROOTField_HH
 
 //Standard Libraries
 #include <iostream>
@@ -102,4 +103,4 @@ private:
 
 
 
-#endif // ROOT2FIELD_H
+#endif // SRKROOTField_HH

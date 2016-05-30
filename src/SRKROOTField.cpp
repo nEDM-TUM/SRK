@@ -336,7 +336,7 @@ int SRKROOTField::loadFieldROOTFile(string filePath, string histName, double sca
 {
 	TFile inpFile(filePath.data(), "READ");
 	TH1* histArray[3] =
-	{ NULL, NULL, NULL };
+	{ nullptr, nullptr, nullptr };
 	string specificHistName;
 	for (int i = 0; i < dimOfField; i++)
 	{

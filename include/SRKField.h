@@ -10,25 +10,15 @@ const static double inv_c_light = 1. / 2.99792458e+8;
 enum FieldType{FIELD_MAGNETIC,FIELD_ELECTRIC,FIELD_GRAVITY};
 enum FieldClass{FIELDCLASS_UNIFORM,FIELDCLASS_GRADIENT,FIELDCLASS_DIPOLE,FIELDCLASS_OSCILLATING,FIELDCLASS_INTERPOLATION};
 
-//Simple settings class
-class FieldSettings
+////////////////////////////////////////////////////////////////
+/// SRKFieldSettings
+/// Simple class to store settings related to SRKFields
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
+class SRKFieldSettings
 {
 public:
-	FieldSettings()
-	{
-		scalingValue = 0;
-		fieldType = FIELD_MAGNETIC;
-		fieldClass = FIELDCLASS_UNIFORM;
-		spaceDim = fieldDim = 3;
-		angleX = angleY = angleZ = 0;
-		symmetry[0] = symmetry[1] = symmetry[2] = false;
-		histName = "field";
-		extents = TVector3(100., 100., 100.);
-		fieldFilePath = "";
-		useCubicInterpolation = false;
-		frequency = 0;
-	}
-	;
 
 	inline TString getFieldTypeString()
 	{
@@ -46,58 +36,65 @@ public:
 		if(fieldClass == FIELDCLASS_INTERPOLATION) out = "Interpolation";
 		return out;
 	}
-	std::string fieldFilePath;
-	std::string histName;
+	std::string fieldFilePath; //Path for field file (e.g. for interpolated)
+	std::string histName = "field"; //In case of stored histogram, the histogram name
 
 	TVector3 centerPos;  //Center position of field extents. Base for local unit system local unit system for field. Not used by interpolated field.[mm]
-	TVector3 extents;    //Extents of the field in both directions from the center position (later to be changed)
+	TVector3 extents = TVector3(100., 100., 100.);    //Extents of the field in both directions from the center position (later to be changed)
 	TVector3 offset;     //Offset of local unit system
 	TVector3 direction;  //Direction of field (changed to unit vector)
-	double frequency; 		  //rad/s
 	TVector3 moment;	  //
 
-	double scalingValue; //[tesla][V/m][m/s2] Zero scaling value will be the signal that no field should be loaded;
-	int spaceDim;
-	int fieldDim;
-	double angleX;
-	double angleY;
-	double angleZ;
-	FieldType fieldType;
-	FieldClass fieldClass;
-	bool symmetry[3];
-	bool useCubicInterpolation;
+	double scalingValue = 0.; //[tesla][V/m][m/s2] Zero scaling value will be the signal that no field should be loaded;
+	double frequency = 0.; 		  //rad/s
+	double angleX=0;
+	double angleY=0;
+	double angleZ=0;
+	int spaceDim = 3;        //Number of spacial dimensions
+	int fieldDim = 3;        //1 = scalar, 2,3=vector field
+	FieldType fieldType = FIELD_MAGNETIC;  //What type of field (e.g. electric, magnetic)
+	FieldClass fieldClass = FIELDCLASS_UNIFORM;  //What class of field? (e.g. uniform, gradient, dipole etc.)
+	bool symmetry[3] = { false, false, false }; //Whether to mirror the field across an axis x,y,z
+	bool useCubicInterpolation = false; //Whether to use cubic interpolation IF an interpolated field
 };
 
+////////////////////////////////////////////////////////////////
+/// class SRKField
+/// Abstract base class for electric or magnetic fields
+/// Based on treatment in Geant4
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
 class SRKField
 {
 public:
 
-	//  Constructors
 	SRKField();
-	SRKField(FieldSettings inpFS);
+	SRKField(SRKFieldSettings inpFS);
+	virtual ~SRKField()
+	{
+	};
 
-	//  Destructor.
-	virtual ~SRKField();
-
-	//All UCCNTFields must implement addFieldValue  This is for extra speed
-	virtual void addFieldValue(const double Point[4], double Bfield[]) const=0;
+	//All SRKFields must implement addFieldValue
+	virtual void addFieldValue(const double globalPoint[4], double fieldArray[9])=0; ///Field is an a
+	inline void getFieldValue(const double globalPoint[4], double fieldArray[9])
+	{
+		fieldArray[0] = fieldArray[1] = fieldArray[2] = fieldArray[3] = fieldArray[4] = fieldArray[5] = fieldArray[6] = fieldArray[7] = fieldArray[8] = 0.;
+		addFieldValue(globalPoint, fieldArray);
+	}
 
 	inline double getLength(){ return fs.extents[0];}
 	inline double getWidth(){ return fs.extents[1];}
 	inline double getHeight(){return fs.extents[2];}
-	inline bool DoesFieldChangeEnergy() const{ return true;}
-	inline void GetFieldValue(const double Point[4], double Bfield[]) const
-	{
-		Bfield[0] = Bfield[1] = Bfield[2] = Bfield[3] = Bfield[4] = Bfield[5] = Bfield[6] = Bfield[7] = Bfield[8] = 0.;
-		addFieldValue(Point, Bfield);
-	}
+
 	inline FieldType getFieldType(){ return fs.fieldType;}
 
 protected:
 
-	FieldSettings fs;
-	int g4FieldX, g4FieldY, g4FieldZ;
-	double scalingFactorWUnits;
+
+	SRKFieldSettings fs;  //Field settings for the field
+	int g4FieldX, g4FieldY, g4FieldZ;  /// index for fieldArray to fill  (0,1,2 = magnetic  3,4,5 = electric  6,7,8 = gravity
+	double scalingFactorWUnits; //The fs.scaling factor multiplied units appropriate to the type and class
 
 };
 

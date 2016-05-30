@@ -20,7 +20,7 @@ SRKMacroManager::~SRKMacroManager()
 
 }
 
-bool SRKMacroManager::openMacroFile(TString filePath)
+bool SRKMacroManager::openMacroFile(const TString filePath)
 {
 	ifstream theFile(filePath);
 	TString sBuffer("#");
@@ -31,8 +31,8 @@ bool SRKMacroManager::openMacroFile(TString filePath)
 	}
 
 	cout << "Opening macro file: " << filePath << endl;
-	std::list<TString> fileCommandStringList;
-	std::list<TString> fileCommandValueStringList;
+	list<TString> fileCommandStringList;
+	list<TString> fileCommandValueStringList;
 
 	while (!theFile.fail() || !theFile.eof())
 	{
@@ -73,8 +73,6 @@ void SRKMacroManager::runMacroCommands()
 			break;  //Break if there is a command issue;
 		}
 
-
-
 	}
 }
 
@@ -95,7 +93,7 @@ void SRKMacroManager::enterInteractiveMode()
 		if(theLine == "end" || theLine == "quit" || theLine == "exit" || theLine == "q")
 		{
 			cout << "Exiting Interactive Mode..." << endl;
-			endInteractiveMode=true;
+			endInteractiveMode = true;
 			break;
 		}
 		lineStream.clear();
@@ -105,16 +103,16 @@ void SRKMacroManager::enterInteractiveMode()
 		lineStream.ignore(1);
 		getline(lineStream, commandValueString);
 		//cout << "Command: " << commandString << "  Value: " << commandValueString << endl;
-		runMacroCommand(commandString,  commandValueString);
+		runMacroCommand(commandString, commandValueString);
 
-		if(commandString=="runMacroFile") //Need to follow up and run the commands that got added but still return to interactive mode.
+		if(commandString == "runMacroFile") //Need to follow up and run the commands that got added but still return to interactive mode.
 		{
 			runMacroCommands();
 		}
 	}
 }
 
-bool SRKMacroManager::runMacroCommand(string command, string value)
+bool SRKMacroManager::runMacroCommand(const string command, const string value)
 {
 	if(commandMap.count(command) == 0) //Command doesn't exist?
 	{
@@ -159,7 +157,7 @@ bool SRKMacroManager::getNonCommentLine(ifstream& inpFileStream, TString& outStr
 	return true;
 }
 
-bool SRKMacroManager::stobool(string inp)
+bool SRKMacroManager::stobool(const string inp)
 {
 	if(inp == "0" || inp == "false" || inp == "FALSE" || inp == "False")
 	{
@@ -176,7 +174,7 @@ bool SRKMacroManager::stobool(string inp)
 	return false;
 }
 
-void SRKMacroManager::sto3double(string inp,double& x,double& y,double& z)
+void SRKMacroManager::sto3double(const string inp, double& x, double& y, double& z)
 {
 	stringstream aStringStream(inp);
 	aStringStream >> x >> y >> z;
@@ -184,22 +182,22 @@ void SRKMacroManager::sto3double(string inp,double& x,double& y,double& z)
 
 }
 
-TVector3 SRKMacroManager::stoTVector3(string inp)
+TVector3 SRKMacroManager::stoTVector3(const string inp)
 {
 	double x, y, z;
-	sto3double(inp,x, y, z);
+	sto3double(inp, x, y, z);
 	return TVector3(x, y, z);
 
 }
 
 void SRKMacroManager::defineCommands()
 {
-	commandMap["setRecordAllSteps"] = [&](string inp) {	theManager->setRecordAllSteps(stobool(inp));};
-	commandMap["setUseAltStepping"] = [&](string inp) {	theManager->setUseAltStepping(stobool(inp));};
-	commandMap["setParallelFields"] = [&](string inp) {	theManager->setParallelFields(stobool(inp));};
-	commandMap["setUse2D"] = [&](string inp) {	theManager->setUse2D(stobool(inp));};
-	commandMap["setConstStepper"] = [&](string inp) 	{	theManager->setConstStepper(stobool(inp));};
-	commandMap["setManualTracking"] = [&](string inp) {	theManager->setManualTracking(stobool(inp));};
+	commandMap["setRecordAllSteps"] = [&](string inp){	theManager->setRecordAllSteps(stobool(inp));};
+	commandMap["setUseAltStepping"] = [&](string inp){	theManager->setUseAltStepping(stobool(inp));};
+	commandMap["setParallelFields"] = [&](string inp){	theManager->setParallelFields(stobool(inp));};
+	commandMap["setUse2D"] = [&](string inp){	theManager->setUse2D(stobool(inp));};
+	commandMap["setConstStepper"] = [&](string inp){	theManager->setConstStepper(stobool(inp));};
+	commandMap["setManualTracking"] = [&](string inp){	theManager->setManualTracking(stobool(inp));};
 	commandMap["setGyromagneticRatio"] = [&](string inp){	theManager->setGyromagneticRatio(stod(inp));};
 	commandMap["setMass"] = [&](string inp){	theManager->setMass(stod(inp));};
 	commandMap["setMeanFreePath"] = [&](string inp){	theManager->setMeanFreePath(stod(inp));};
@@ -208,12 +206,12 @@ void SRKMacroManager::defineCommands()
 	commandMap["setTimeLimit"] = [&](string inp){	theManager->setTimeLimit(stod(inp));};
 	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->setDiffuseReflectionProb(stod(inp));};
 	commandMap["setMeanVel"] = [&](string inp){	theManager->setMeanVel(stod(inp));};
-	commandMap["setReflectionLimit"] = [&](string inp)	{	theManager->setReflectionLimit(stod(inp));};
+	commandMap["setReflectionLimit"] = [&](string inp){	theManager->setReflectionLimit(stod(inp));};
 	commandMap["setChamberRadius"] = [&](string inp){	theManager->setChamberRadius(stod(inp));};
 	commandMap["setChamberHeight"] = [&](string inp){	theManager->setChamberHeight(stod(inp));};
 	commandMap["setChamberRotation"] = [&](string inp){	double x, y, z; sto3double(inp,x, y, z);theManager->setChamberRotation(x,y,z);};
 	commandMap["setB0FieldStrength"] = [&](string inp){	theManager->setB0FieldStrength(stod(inp));};
-	commandMap["setE0FieldStrength"] = [&](string inp)	{	theManager->setE0FieldStrength(stod(inp));};
+	commandMap["setE0FieldStrength"] = [&](string inp){	theManager->setE0FieldStrength(stod(inp));};
 	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};
 	commandMap["setEGradFieldStrength"] = [&](string inp){	theManager->setEGradFieldStrength(stod(inp));};
 	commandMap["setDipoleFieldStrength"] = [&](string inp){	theManager->setDipoleFieldStrength(stod(inp));};
@@ -224,18 +222,20 @@ void SRKMacroManager::defineCommands()
 	commandMap["setDipoleDirection"] = [&](string inp){	theManager->setDipoleDirection(stoTVector3(inp));};
 	commandMap["setE0FieldDirection"] = [&](string inp){	theManager->setE0FieldDirection(stoTVector3(inp));};
 	commandMap["setB0FieldDirection"] = [&](string inp){	theManager->setB0FieldDirection(stoTVector3(inp));};
-	commandMap["setPos"] = [&](string inp)	{	theManager->setPos(stoTVector3(inp));};
+	commandMap["setPos"] = [&](string inp){	theManager->setPos(stoTVector3(inp));};
 	commandMap["setVel"] = [&](string inp){	theManager->setVel(stoTVector3(inp));};
 	commandMap["setResultsFilePath"] = [&](string inp){	theManager->setResultsFilePath(inp);};
-	commandMap["setTrackFilePath"] = [&](string inp)	{	theManager->setTrackFilePath(inp);};
-	commandMap["setRandomSeed"] = [&](string inp) { theManager->setRandomSeed(stoi(inp));};
-	commandMap["setDefaultResultsDir"] = [&](string inp)	{	theManager->setDefaultResultsDir(inp);};
-	commandMap["setVelProfHistPath"] = [&](string inp)	{	theManager->setVelProfHistPath(inp);};
-	commandMap["setRunID"] = [&](string inp)	{	theManager->setRunID(inp);};
-	commandMap["makeTracks"] = [&](string inp)	{	theManager->makeTracks(stoi(inp));};
-	commandMap["trackSpins"] = [&](string inp)	{	theManager->trackSpins(stoi(inp));};
-	commandMap["trackSpinsDeltaOmega"] = [&](string inp)	{	theManager->trackSpinsDeltaOmega(stoi(inp));};
-	commandMap["openMacroFile"] = [&](string inp)	{	openMacroFile(inp);};
-	commandMap["loadParametersFromResultsFile"] = [&](string inp)	{	theManager->loadParametersFromResultsFile(inp);};
+	commandMap["setTrackFilePath"] = [&](string inp){	theManager->setTrackFilePath(inp);};
+	commandMap["setRandomSeed"] = [&](string inp){	theManager->setRandomSeed(stoi(inp));};
+	commandMap["setDefaultResultsDir"] = [&](string inp){	theManager->setDefaultResultsDir(inp);};
+	commandMap["setVelProfHistPath"] = [&](string inp){	theManager->setVelProfHistPath(inp);};
+	commandMap["setRunID"] = [&](string inp){	theManager->setRunID(inp);};
+	commandMap["makeTracks"] = [&](string inp){	theManager->makeTracks(stoi(inp));};
+	commandMap["trackSpins"] = [&](string inp) {	theManager->precessSpinsAlongTracks(stoi(inp));};          // Depricated
+	commandMap["precessSpinsAlongTracks"] = [&](string inp){	theManager->precessSpinsAlongTracks(stoi(inp));};
+	commandMap["trackSpinsDeltaOmega"] = [&](string inp)  {	theManager->precessSpinsAlongTracksParAndAnti(stoi(inp));};// Depricated
+	commandMap["precessSpinsAlongTracksParAndAnti"] = [&](string inp){	theManager->precessSpinsAlongTracksParAndAnti(stoi(inp));};
+	commandMap["openMacroFile"] = [&](string inp){	openMacroFile(inp);};
+	commandMap["loadParametersFromResultsFile"] = [&](string inp){	theManager->loadParametersFromResultsFile(inp);};
 
 }

@@ -37,7 +37,7 @@ void convertXYDataWErrorToTXT(int numData, double* x, double* y, double* eX, dou
 	{
 		outFile.precision(15);
 		outFile << scientific << x[i];
-		if(eX != NULL)
+		if(eX != nullptr)
 		{
 			outFile << "\t" << scientific << eX[i];
 		}
@@ -47,7 +47,7 @@ void convertXYDataWErrorToTXT(int numData, double* x, double* y, double* eX, dou
 		}
 
 		outFile << "\t" << scientific << y[i];
-		if(eY != NULL)
+		if(eY != nullptr)
 		{
 			outFile << "\t" << scientific << eY[i];
 		}
@@ -157,7 +157,7 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 	if(!fileExists(filePath))
 	{
 		cout << "File, " << filePath << ", does not exist." << endl;
-		return NULL;
+		return nullptr;
 	}
 
 	ifstream inpFile;
@@ -184,7 +184,7 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 	{
 		cout << "Data expected in X,Y or X,Y,Yerror   or  X,Xerror,Y,Yerror format!" << endl;
 		cout << "Number of columns set, " << numColumns << ", is incorrected." << endl;
-		return NULL;
+		return nullptr;
 	}
 
 	//Read data
@@ -234,11 +234,11 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 
 	if(numColumns == 2)
 	{
-		outGraph = new TGraphErrors(numData, &values[0][0], &values[2][0], NULL, NULL);
+		outGraph = new TGraphErrors(numData, &values[0][0], &values[2][0], nullptr, nullptr);
 	}
 	else if(numColumns == 3)
 	{
-		outGraph = new TGraphErrors(numData, &values[0][0], &values[2][0], NULL, &values[3][0]);
+		outGraph = new TGraphErrors(numData, &values[0][0], &values[2][0], nullptr, &values[3][0]);
 	}
 	else if(numColumns == 4)
 	{

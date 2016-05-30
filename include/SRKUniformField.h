@@ -8,11 +8,11 @@
 class SRKUniformField: public SRKField
 {
 public:
-	SRKUniformField(FieldSettings inpFS);
+	SRKUniformField(SRKFieldSettings inpFS);
 
 	virtual ~SRKUniformField();
 
-	void addFieldValue(const double pos[4], double *field) const;
+	void addFieldValue(const double globalPoint[4], double fieldValue[9]);
 
 private:
 	double fieldComponents[3];

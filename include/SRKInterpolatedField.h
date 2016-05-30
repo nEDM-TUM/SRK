@@ -7,17 +7,24 @@
 #include "SRKField.h"
 #include "TVector3.h"
 
-//Interpolated field using a 2D or 3D field from a ROOT File using UCNROOTField
+////////////////////////////////////////////////////////////////
+/// class SRKInterpolatedField
+///
+/// A field stored in a ROOT file that interpolation is performed on.
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
 
 class SRKInterpolatedField: public SRKField
 {
 public:
-	SRKInterpolatedField(FieldSettings fs);
-	virtual ~SRKInterpolatedField();
+	SRKInterpolatedField(SRKFieldSettings fs);
+	~SRKInterpolatedField(){}
 
-	void addFieldValue(const double Point[4], double* Bfield) const;
+	void addFieldValue(const double globalPoint[4], double fieldValue[9]);
+
 private:
-	SRKROOTField* theROOTField;
+	SRKROOTField theROOTField;
 	TVector3 offset;
 };
 

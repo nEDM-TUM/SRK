@@ -6,7 +6,7 @@ using namespace std;
 
 SRKEquationOfMotion::SRKEquationOfMotion()
 {
-	theGlobalField=NULL;
+	theGlobalField=nullptr;
 	gyromagneticRatio = -4.84578839927e7;  //Hg radians/s/T
 }
 
@@ -14,11 +14,6 @@ SRKEquationOfMotion::SRKEquationOfMotion(SRKGlobalField* inpGlobalField)
 {
 	theGlobalField = inpGlobalField;
 	gyromagneticRatio=0;
-}
-
-SRKEquationOfMotion::~SRKEquationOfMotion()
-{
-
 }
 
 void SRKEquationOfMotion::operator()(const SRKMotionState& x, SRKMotionState& dxdt, const SRKSpinFloat t)
@@ -31,7 +26,7 @@ void SRKEquationOfMotion::SRKEqOfMNonRelLinearSpherical(const SRKMotionState& x,
 	posDouble[0] = static_cast<double> (x[0]);
 	posDouble[1] = static_cast<double> (x[1]);
 	posDouble[2] = static_cast<double> (x[2]);
-	theGlobalField->GetFieldValue(posDouble, fieldDouble);
+	theGlobalField->getFieldValue(posDouble, fieldDouble);
 	for(int i=0;i<9;i++)
 	{
 		theField[i]=fieldDouble[i];

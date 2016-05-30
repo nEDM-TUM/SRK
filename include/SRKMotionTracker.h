@@ -12,33 +12,36 @@
 #include "TGeoManager.h"
 #include "TH1.h"
 
+////////////////////////////////////////////////////////////////
+/// class SRKMotionTracker
+///
+/// Tracks particle motion inside a geometry (i.e. chamber)
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
 class SRKMotionTracker
 {
 public:
 	SRKMotionTracker();
 	virtual ~SRKMotionTracker();
 
-	void makeTracks(int numTracksToAdd, TString inpTrackFilePath);
-	void makeTracks(int numTracksToAdd);
-	void drawTrack(int trackID);
+	void makeTracks(int numTracksToAdd, TString inpTrackFilePath);  /// Make tracks to a ROOT file
+	void makeTracks(int numTracksToAdd); /// Make tracks to a local tree
+	void drawTrack(int trackID);  /// Draw a track to a TCanvas
 
-	void makeCylinderGeometry();
+	void makeCylinderGeometry();  /// Make a cylindrical geometry
 	double getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut); //Return time till next reflection
-	bool getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn);
+	bool getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn); //Gets the next tracking point (typically point of reflection) returns true if it's the last track
 
-	TVector3 getRandomDirection();
-	TVector3 getRandomPointInCylinder();
-	void getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut);
+	TVector3 getRandomDirection();  //Get's a random direction
+	TVector3 getRandomPointInCylinder(); //Get's a randomly sampled point in the a cylinder
+	void getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut);  //gets a random velocity vector and position
 	TVector3 getRandomVelocityVector();
 
 	bool loadTrackFile(TString filePath); //returns true if successful
 	void openTrackFile(TString inpTrackFilePath);
 	void closeTrackFile();
 	void writeTrackToFile();
-
-
-
-
 
 	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
 
@@ -88,8 +91,6 @@ protected:
 
 	void makeTrackTree();
 
-
-
 	TTree* trackTree; //Track tree containing position and reflection information
 	int currentEntry;
 	int numTracks;
@@ -122,7 +123,7 @@ protected:
 	double safety;
 	double maxTrackSize;
 
-	TFile* trackFile;
+	TFile trackFile;
 
 	//Tracking Variables
 	TVector3 pos;
@@ -136,7 +137,6 @@ protected:
 	//For branch addresses for trees...This is dumb...should probably replace with a state class
 	TVector3* posTree;
 	TVector3* velTree;
-
 
 };
 

@@ -37,7 +37,7 @@
 
 #include "SRKUniformField.h"
 
-SRKUniformField::SRKUniformField(FieldSettings inpFS) :
+SRKUniformField::SRKUniformField(SRKFieldSettings inpFS) :
 	SRKField(inpFS)
 {
 	fieldComponents[0] = scalingFactorWUnits * inpFS.direction.x();
@@ -51,9 +51,9 @@ SRKUniformField::~SRKUniformField()
 
 // ------------------------------------------------------------------------
 
-void SRKUniformField::addFieldValue(const double[4], double* outField) const
+void SRKUniformField::addFieldValue(const double globalPoint[4], double fieldValue[9])
 {
-	outField[g4FieldX] += fieldComponents[0];
-	outField[g4FieldY] += fieldComponents[1];
-	outField[g4FieldZ] += fieldComponents[2];
+	fieldValue[g4FieldX] += fieldComponents[0];
+	fieldValue[g4FieldY] += fieldComponents[1];
+	fieldValue[g4FieldZ] += fieldComponents[2];
 }
