@@ -8,14 +8,23 @@
 
 #include "TString.h"
 
+////////////////////////////////////////////////////////////////
+/// class SRKSpinTracker
+///
+/// Tracks spin precession between two points using ODEINT
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
+
 class SRKSpinTracker
 {
 public:
 	SRKSpinTracker();
 	SRKSpinTracker(SRKGlobalField* theField);
 	virtual ~SRKSpinTracker();
-	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = nullptr, std::vector<double>* stepTimes = nullptr);
-	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=nullptr, std::vector<double>* stepTimes=nullptr);
+
+	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = nullptr, std::vector<double>* stepTimes = nullptr);  //Primary spin tracker
+	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=nullptr, std::vector<double>* stepTimes=nullptr); //Alternate spin tracker (more manual)
 
 	inline void resetStepsTaken(){stepsTaken=0;}
 	inline void setEPSAbs(double inp){eps_abs =inp;}
@@ -35,11 +44,10 @@ protected:
 	double eps_abs; //absolute error in radians per step (applies to phi only)
 	double eps_rel; //relative error per step (applies to phi only)
 	double initialStepSize; //in time
-	int stepsTaken;
-	SRKEquationOfMotion theEquationOfMotion;
+	int stepsTaken;  //Number of steps taken
+	SRKEquationOfMotion theEquationOfMotion; //The equation of motion
 
-
-	bool constStepper;
+	bool constStepper; //Whether to use the constant stepper algorithm
 
 };
 

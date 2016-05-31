@@ -39,11 +39,11 @@ public:
 	TVector3 getRandomVelocityVector();
 
 	bool loadTrackFile(TString filePath); //returns true if successful
-	void openTrackFile(TString inpTrackFilePath);
-	void closeTrackFile();
-	void writeTrackToFile();
+	void openTrackFile(TString inpTrackFilePath); //Open track file for trackTree
+	void closeTrackFile(); //Close track file
+	void writeTrackToFile(); //Writing track to file
 
-	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);
+	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);  //Getting data from trackTree based on currentEntry
 
 	inline double getTimeLimit(){return timeLimit;}
 	inline double getDiffuseReflectionProb(){return diffuseReflectionProb;}
@@ -80,63 +80,63 @@ public:
 
 protected:
 
-	double getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius);
-	TVector3 getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal);
-	bool loadVelProfHist();
-	double getRandomVelFromProfHist();
+	double getTimeIntersectVecInCircle(TVector2 pos0, TVector2 vel0, double radius);  //Determine based on velocity and position and radius when particle would reach boundary.
+	TVector3 getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal);  //Get the reflected vector in the geometry
+	bool loadVelProfHist();  //Load the velocity profile histogram to sample from
+	double getRandomVelFromProfHist();  //Randomly sample the velProfHist
 
-	TVector3 getDiffuseReflectedVector(const TVector3 normal);
+	TVector3 getDiffuseReflectedVector(const TVector3 normal);  //Get a Lambert diffuse reflection given a normal surface vector
 
-	void makeTrack(int inpTrackID);
+	void makeTrack(int inpTrackID);  //make a single track
 
-	void makeTrackTree();
+	void makeTrackTree();  //Set up the track tree
 
 	TTree* trackTree; //Track tree containing position and reflection information
-	int currentEntry;
-	int numTracks;
+	int currentEntry; //Current entry being tracked
+	int numTracks;   //Number of tracks to simulate
 	double timeLimit; //Stop after a time limit
 	int reflectionLimit; //Stop after a numer of reflections
-	bool use2D;
-	double additionalRandomVelZ;
-	bool useGravity;
+	bool use2D;  //Whether to simulate in 2D or 3D
+	double additionalRandomVelZ; //Allows for a z velocity to be added independent from the determination of the x and y velocities
+	bool useGravity;  //Whether gravity is enabled (currently not)
 	bool manualTracking; //Instead of random
 	double diffuseReflectionProb;  //0 = Specular 1=Diffuse Lambert
 
 	//Particle
 	double mass;
 	double meanVel;
-	double temperature;
+	double temperature; //Temperature of the particles (for Maxwell distributions)
 	TH1* velProfHist;
-	TString velProfHistPath;
+	TString velProfHistPath; //the file path for velProfHist.  Note that if it begins with "!"  the number following it will be used as temperature in Kelvin for a Maxwell distribution
 	double meanFreePath; //in meters, negative means no mean free path
 
 	//Geometry
 	double chamberRadius;
 	double chamberHeight;
-	double chamberPhi;  //Euler angles for chamber rotation
-	double chamberTheta;
-	double chamberPsi;
-	TGeoRotation theRotation;
-	TGeoManager* theGeoManager;
-	TGeoMaterial* vacMat;
-	TGeoMedium* vacMed;
-	double safety;
-	double maxTrackSize;
+	double chamberPhi;  //Euler angle for chamber rotation
+	double chamberTheta; //Euler angle for chamber rotation
+	double chamberPsi; //Euler angle for chamber rotation
+	TGeoRotation theRotation; //The chamber rotation
+	TGeoManager* theGeoManager;  //ROOT based geomanager
+	TGeoMaterial* vacMat;  //Vaccuum material
+	TGeoMedium* vacMed; //Vacuum medium
+	double safety;  //A small distance unimportant for the physical problem to mitigate floating point errors
+	double maxTrackSize;  //Current implementation with TGeoManger requires a negative number
 
 	TFile trackFile;
 
 	//Tracking Variables
-	TVector3 pos;
-	TVector3 vel;
+	TVector3 pos; //Current position
+	TVector3 vel; //Current velocity
 	double currentTime;
-	int trackID;
-	bool lastTrack;
-	int totalReflections;
-	int totalGasCollisions;
+	int trackID; //current track id number
+	bool lastTrack; //Whether this is the last track
+	int totalReflections; //How many reflections with chamber walls
+	int totalGasCollisions; //How many gas collisions
 
 	//For branch addresses for trees...This is dumb...should probably replace with a state class
-	TVector3* posTree;
-	TVector3* velTree;
+	TVector3* posForBranch;
+	TVector3* velForBranch;
 
 };
 

@@ -40,8 +40,8 @@ SRKMotionTracker::SRKMotionTracker()
 	timeLimit = 100;
 	diffuseReflectionProb = 100;
 	numTracks = 0;
-	posTree = nullptr;
-	velTree = nullptr;
+	posForBranch = nullptr;
+	velForBranch = nullptr;
 	totalReflections = 0;
 	currentTime = 0.;
 	lastTrack = false;
@@ -56,8 +56,8 @@ SRKMotionTracker::SRKMotionTracker()
 	totalGasCollisions = 0;
 	theRotation.SetAngles(0, 0, 0);
 	theGeoManager = new TGeoManager("theManager", "SRK Simulation Geometry");
-	vacMat = new TGeoMaterial("Vacuum", 0, 0, 0); //Removed with Geomanager
-	vacMed = new TGeoMedium("Vacuum", 1, vacMat); //Removed with Geomanger
+	vacMat = new TGeoMaterial("Vacuum", 0, 0, 0); //Removed with GeoManager
+	vacMed = new TGeoMedium("Vacuum", 1, vacMat); //Removed with GeoManager
 	safety = 1e-9;
 	maxTrackSize = -1000; //defined as negative number for proper normal vector determination
 
@@ -68,8 +68,6 @@ SRKMotionTracker::~SRKMotionTracker()
 	gROOT->cd();
 	closeTrackFile();
 	delete theGeoManager;
-	delete posTree;
-	delete velTree;
 	delete velProfHist;
 
 }
@@ -163,8 +161,8 @@ bool SRKMotionTracker::loadTrackFile(TString filePath)
 	trackTree->SetBranchAddress("trackID", &trackID);
 	trackTree->SetBranchAddress("lastTrack", &lastTrack);
 	trackTree->SetBranchAddress("time", &currentTime);
-	trackTree->SetBranchAddress("pos", &posTree);
-	trackTree->SetBranchAddress("vel", &velTree);
+	trackTree->SetBranchAddress("pos", &posForBranch);
+	trackTree->SetBranchAddress("vel", &velForBranch);
 	currentEntry = 0;
 	return true;
 
@@ -174,9 +172,9 @@ void SRKMotionTracker::getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut,
 {
 	trackTree->GetEntry(currentEntry);
 
-	posOut = *posTree;
+	posOut = *posForBranch;
 
-	velOut = *velTree;
+	velOut = *velForBranch;
 
 	currentTimeOut = currentTime;
 	trackIDOut = trackID;

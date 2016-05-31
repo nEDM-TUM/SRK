@@ -5,6 +5,14 @@
 
 #include "SRKField.h"
 
+////////////////////////////////////////////////////////////////
+/// class SRKUniformField
+///
+/// A uniform electric/magnetic field in an arbitrary direction
+///
+/// Author: Matthew Bales
+///////////////////////////////////////////////////////////////
+
 class SRKUniformField: public SRKField
 {
 public:
