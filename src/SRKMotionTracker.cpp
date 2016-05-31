@@ -38,7 +38,8 @@ SRKMotionTracker::SRKMotionTracker()
 	chamberTheta = 0;
 	chamberPsi = 0;
 	timeLimit = 100;
-	diffuseReflectionProb = 100;
+	diffuseReflectionProb = 1;
+	depolAtWallProb = 0;
 	numTracks = 0;
 	posForBranch = nullptr;
 	velForBranch = nullptr;
@@ -347,7 +348,7 @@ bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, do
 #endif
 
 	//Use Mean Free Path to calculate a time
-	double meanFreePathTime = 99999999;
+	double meanFreePathTime = numeric_limits<double>::max();
 	if(meanFreePath > 0)
 	{
 		double mfpDist = -meanFreePath * log(1. - gRandom->Rndm());  //Randomly determine when the next collision will happen
@@ -385,6 +386,11 @@ bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, do
 			velIn = velRef;
 			lastTrack = false;
 			totalReflections++;
+
+			if(gRandom->Rndm() < depolAtWallProb)
+			{
+				lastTrack=true;
+			}
 
 			if(totalReflections >= reflectionLimit)
 			{

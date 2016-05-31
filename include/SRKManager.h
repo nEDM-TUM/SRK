@@ -79,6 +79,7 @@ public:
 	inline double getMass(){return theMotionTracker.getMass();}
 	inline double getMeanFreePath(){return theMotionTracker.getMeanFreePath();}
 	inline double getAdditionalRandomVelZ(){return theMotionTracker.getAdditionalRandomVelZ();}
+	inline double getDepolAtWallProb(){return theMotionTracker.getDepolAtWallProb();}
 	inline TVector3 getPos(){return theMotionTracker.getPos();}
 	inline TVector3 getVel(){return theMotionTracker.getVel();}
 
@@ -122,6 +123,7 @@ public:
 	inline void setChamberHeight(double inp){theMotionTracker.setChamberHeight(inp);}
 	inline void setChamberRotation(double phi,double theta, double psi){theMotionTracker.setChamberRotation(phi,theta, psi);}
 	inline void setVelByOmegaSteyerl(double OmegaSteyerl){theMotionTracker.setMeanVel(fabs(OmegaSteyerl*getGyromagneticRatio()*b0FieldStrength*getChamberRadius()));}
+	inline void setDepolAtWallProb(const double inp){theMotionTracker.setDepolAtWallProb(inp);}
 	inline void setPos(const TVector3& inp){ theMotionTracker.setPos(inp);}
 	inline void setVel(const TVector3& inp){ theMotionTracker.setVel(inp);}
 	inline void setVelProfHistPath(const TString inp){theMotionTracker.setVelProfHistPath(inp);}
@@ -136,8 +138,8 @@ protected:
 	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);  /// Takes a vector of the results of each step and writes them to the tree
 	void loadFields();  /// Load the electric and magnetic fields (could load ROOT files for interpolation)
 	void calcDeltaPhaseMean(TString inpRunID); /// Given a parallell
-	SRKRunStats calcResultsFileStats(TString filePath, bool useWrapping); //Calculates some statistics for run file
-	double calculateSzDetectionProbability(double phi, double theta); /// calculates
+	SRKRunStats calcResultsFileStats(TString filePath, bool useWrapping); /// Calculates some statistics for run file
+	double calculateSzDetectionProbability(double phi, double theta); /// Calculates probability of detecting spin in the z+ direction
 	bool fileExists(TString filePath);
 	bool fileExistsAndNotZombie(TString strFileName);
 

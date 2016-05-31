@@ -206,6 +206,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setTimeLimit"] = [&](string inp){	theManager->setTimeLimit(stod(inp));};
 	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->setDiffuseReflectionProb(stod(inp));};
 	commandMap["setMeanVel"] = [&](string inp){	theManager->setMeanVel(stod(inp));};
+	commandMap["setDepolAtWallProb"] = [&](string inp){	theManager->setDepolAtWallProb(stod(inp));};
 	commandMap["setReflectionLimit"] = [&](string inp){	theManager->setReflectionLimit(stod(inp));};
 	commandMap["setChamberRadius"] = [&](string inp){	theManager->setChamberRadius(stod(inp));};
 	commandMap["setChamberHeight"] = [&](string inp){	theManager->setChamberHeight(stod(inp));};
