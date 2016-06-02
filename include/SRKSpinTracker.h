@@ -23,8 +23,8 @@ public:
 	SRKSpinTracker(SRKGlobalField* theField);
 	virtual ~SRKSpinTracker();
 
-	void trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord = nullptr, std::vector<double>* stepTimes = nullptr);  //Primary spin tracker
-	void trackSpinAltA(SRKMotionState& theState, double timeToTrack,std::vector<SRKMotionState>* stepRecord=nullptr, std::vector<double>* stepTimes=nullptr); //Alternate spin tracker (more manual)
+	void trackSpin(SRKODEState& theState, double timeToTrack, std::vector<SRKODEState>* stepRecord = nullptr, std::vector<double>* stepTimes = nullptr);  //Primary spin tracker
+	void trackSpinAltA(SRKODEState& theState, double timeToTrack,std::vector<SRKODEState>* stepRecord=nullptr, std::vector<double>* stepTimes=nullptr); //Alternate spin tracker (more manual)
 
 	inline void resetStepsTaken(){stepsTaken=0;}
 	inline void setEPSAbs(double inp){eps_abs =inp;}
@@ -38,7 +38,7 @@ public:
 	inline double getEPSRel(){return eps_rel;}
 	inline int getStepsTaken(){return stepsTaken;}
 	inline double getGyromagneticRatio(){return theEquationOfMotion.getGyromagneticRatio();}
-	inline bool getConstStepper(){return constStepper;}
+	inline bool isConstStepper(){return constStepper;}
 
 protected:
 	double eps_abs; //absolute error in radians per step (applies to phi only)

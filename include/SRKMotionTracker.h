@@ -12,6 +12,9 @@
 #include "TGeoManager.h"
 #include "TH1.h"
 
+#include "SRKMotionState.h"
+
+
 ////////////////////////////////////////////////////////////////
 /// class SRKMotionTracker
 ///
@@ -30,20 +33,21 @@ public:
 	void drawTrack(int trackID);  /// Draw a track to a TCanvas
 
 	void makeCylinderGeometry();  /// Make a cylindrical geometry
-	double getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut); /// Return time till next reflection
-	bool getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn); // Gets the next tracking point (typically point of reflection) returns true if it's the last track
+	bool getNextTrackingPoint(const SRKMotionState& stateIn, SRKMotionState& stateOut); // Gets the next tracking point (typically point of reflection) returns true if it's the last track
+	double getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut); /// Return time till next reflection
 
 	TVector3 getRandomDirection();  //G/ et's a random direction
 	TVector3 getRandomPointInCylinder(); // /Get's a randomly sampled point in the a cylinder
-	void getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut);  /// gets a random velocity vector and position
+	void getRandomVelocityVectorAndPosition(SRKMotionState& stateOut);  /// gets a random velocity vector and position
 	TVector3 getRandomVelocityVector();
+	void getInitialState(SRKMotionState& stateOut); //If manualTracking, then sets state with defaults, otherwise gets it randomly
 
 	bool loadTrackFile(TString filePath); /// returns true if successful
 	void openTrackFile(TString inpTrackFilePath); /// Open track file for trackTree
 	void closeTrackFile(); /// Close track file
 	void writeTrackToFile(); /// Writing track to file
 
-	void getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut);  /// Getting data from trackTree based on currentEntry
+	void getNextTrackTreeEntry(SRKMotionState& stateOut, int& trackIDOut, bool& lastTrackOut);  /// Getting data from trackTree based on currentEntry
 
 	inline double getTimeLimit(){return timeLimit;}
 	inline double getDiffuseReflectionProb(){return diffuseReflectionProb;}
@@ -52,11 +56,11 @@ public:
 	inline double getMeanVel(){return meanVel;}
 	inline int getTrackTreeEntries(){return trackTree->GetEntries();}
 	inline int getTotalReflections(){return totalReflections;}
-	inline TVector3 getPos(){return pos;}
-	inline TVector3 getVel(){return vel;}
-	inline bool getManualTracking(){return manualTracking;}
+	inline TVector3 getDefaultPos(){return defaultState.pos;}
+	inline TVector3 getDefaultVel(){return defaultState.vel;}
+	inline bool isManualTracking(){return manualTracking;}
 	inline int getReflectionLimit(){return reflectionLimit;}
-	inline bool getUse2D(){return use2D;}
+	inline bool isUse2D(){return use2D;}
 	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
 	inline const TString getVelProfHistPath(){return velProfHistPath;}
 	inline double getMass(){return mass;}
@@ -72,8 +76,8 @@ public:
 	inline void setChamberRadius(double inp){chamberRadius=inp; }
 	inline void setChamberHeight(double inp){chamberHeight=inp; }
 	inline void setChamberRotation(double phi,double theta, double psi){chamberPhi=phi;chamberTheta=theta;chamberPsi=psi;}
-	inline void setPos(const TVector3& inp){ pos=inp;}
-	inline void setVel(const TVector3& inp){ vel=inp;}
+	inline void setDefaultPos(const TVector3& inp){ defaultState.pos=inp;}
+	inline void setDefaultVel(const TVector3& inp){ defaultState.vel=inp;}
 	inline void setManualTracking(const bool inp){ manualTracking=inp;}
 	inline void setVelProfHistPath(const TString inp){velProfHistPath=inp; loadVelProfHist();}
 	inline void setMass(const double inp){mass=inp;}
@@ -86,8 +90,10 @@ protected:
 	TVector3 getReflectedVector(const double DiffCoefficient, const TVector3 currentDirection, const TVector3 normal);  /// Get the reflected vector in the geometry
 	bool loadVelProfHist();  /// Load the velocity profile histogram to sample from
 	double getRandomVelFromProfHist();  /// Randomly sample the velProfHist
+	void fillTrackTree();
 
 	TVector3 getDiffuseReflectedVector(const TVector3 normal);  /// Get a Lambert diffuse reflection given a normal surface vector
+
 
 	void makeTrack(int inpTrackID);  /// make a single track
 
@@ -120,7 +126,7 @@ protected:
 	double chamberTheta; /// Euler angle for chamber rotation
 	double chamberPsi; /// Euler angle for chamber rotation
 	TGeoRotation theRotation; /// The chamber rotation
-	TGeoManager* theGeoManager;  /// ROOT based geomanager
+	TGeoManager theGeoManager;  /// ROOT based geomanager
 	TGeoMaterial* vacMat;  /// Vaccuum material
 	TGeoMedium* vacMed; /// Vacuum medium
 	double safety;  /// A small distance unimportant for the physical problem to mitigate floating point errors
@@ -129,15 +135,15 @@ protected:
 	TFile trackFile;
 
 	//Tracking Variables
-	TVector3 pos; /// Current position
-	TVector3 vel; /// Current velocity
-	double currentTime;
+	SRKMotionState currentState;
+	SRKMotionState defaultState;
 	int trackID; /// current track id number
 	bool lastTrack; /// Whether this is the last track
 	int totalReflections; /// How many reflections with chamber walls
 	int totalGasCollisions; // /How many gas collisions
+	double maxTimePerStep; //Max time per track
 
-	//For branch addresses for trees...This is dumb...should probably replace with a state class
+	//For branch addresses for trees...This is dumb, but necessary
 	TVector3* posForBranch;
 	TVector3* velForBranch;
 

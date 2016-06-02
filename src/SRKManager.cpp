@@ -12,13 +12,17 @@
 
 #include "SRKGraphics.h"
 #include "SRKMacroManager.h"
+#include "SRKODEState.h"
+#include "SRKMotionState.h"
 
 using namespace std;
+
+static const int EVENT_STDOUT_ANNOUNCE_RATE = 100;
 
 SRKManager::SRKManager()
 {
 	resultsTree = nullptr;
-
+	useDynamicTracking=true;
 	recordAllSteps = false;
 	useAltStepping = false;
 	parallelFields = true;
@@ -89,11 +93,11 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) isRecordAllSteps())));
 	userInfoList->Add(new TNamed("UseAltStepping", Form("%i", (int) isUseAltStepping())));
 	userInfoList->Add(new TNamed("ParallelFields", Form("%i", (int) isParallelFields())));
-	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) isConstStepper())));
-	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) isUse2D())));
-	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) isManualTracking())));
+	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) theSpinTracker.isConstStepper())));
+	userInfoList->Add(new TNamed("Use2D", Form("%i", (int) theMotionTracker.isUse2D())));
+	userInfoList->Add(new TNamed("ManualTracking", Form("%i", (int) theMotionTracker.isManualTracking())));
 	userInfoList->Add(new TNamed("B0FieldStrength", Form("%e", getB0FieldStrength())));
-	userInfoList->Add(new TNamed("AdditionalRandomVelZ", Form("%e", getAdditionalRandomVelZ())));
+	userInfoList->Add(new TNamed("AdditionalRandomVelZ", Form("%e", theMotionTracker.getAdditionalRandomVelZ())));
 	userInfoList->Add(new TNamed("E0FieldStrength", Form("%e", getE0FieldStrength())));
 	userInfoList->Add(new TNamed("BGradFieldStrength", Form("%e", getBGradFieldStrength())));
 	userInfoList->Add(new TNamed("EGradFieldStrength", Form("%e", getEGradFieldStrength())));
@@ -102,20 +106,20 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed(TString("ResultsFilePath"), getResultsFilePath()));
 	userInfoList->Add(new TNamed(TString("VelProfHistPath"), getVelProfHistPath()));
 	userInfoList->Add(new TNamed(TString("RunID"), getRunID()));
-	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", getGyromagneticRatio())));
-	userInfoList->Add(new TNamed("Mass", Form("%e", getMass())));
-	userInfoList->Add(new TNamed("MeanFreePath", Form("%e", getMeanFreePath())));
-	userInfoList->Add(new TNamed("StepsTaken", Form("%i", getStepsTaken())));
-	userInfoList->Add(new TNamed("TimeLimit", Form("%e", getTimeLimit())));
-	userInfoList->Add(new TNamed("EPSAbs", Form("%e", getEPSAbs())));
-	userInfoList->Add(new TNamed("EPSRel", Form("%e", getEPSRel())));
-	userInfoList->Add(new TNamed("DiffuseReflectionProb", Form("%e", getDiffuseReflectionProb())));
-	userInfoList->Add(new TNamed("ChamberRadius", Form("%e", getChamberRadius())));
-	userInfoList->Add(new TNamed("ChamberHeight", Form("%e", getChamberHeight())));
-	userInfoList->Add(new TNamed("MeanVel", Form("%e", getMeanVel())));
-	userInfoList->Add(new TNamed("ReflectionLimit", Form("%i", getReflectionLimit())));
-	userInfoList->Add(new TNamed("Pos", Form("%f %f %f", getPos().X(), getPos().Y(), getPos().Z())));
-	userInfoList->Add(new TNamed("Vel", Form("%f %f %f", getVel().X(), getVel().Y(), getVel().Z())));
+	userInfoList->Add(new TNamed("GyromagneticRatio", Form("%e", theSpinTracker.getGyromagneticRatio())));
+	userInfoList->Add(new TNamed("Mass", Form("%e", theMotionTracker.getMass())));
+	userInfoList->Add(new TNamed("MeanFreePath", Form("%e", theMotionTracker.getMeanFreePath())));
+	userInfoList->Add(new TNamed("StepsTaken", Form("%i", theSpinTracker.getStepsTaken())));
+	userInfoList->Add(new TNamed("TimeLimit", Form("%e", theMotionTracker.getTimeLimit())));
+	userInfoList->Add(new TNamed("EPSAbs", Form("%e", theSpinTracker.getEPSAbs())));
+	userInfoList->Add(new TNamed("EPSRel", Form("%e", theSpinTracker.getEPSRel())));
+	userInfoList->Add(new TNamed("DiffuseReflectionProb", Form("%e", theMotionTracker.getDiffuseReflectionProb())));
+	userInfoList->Add(new TNamed("ChamberRadius", Form("%e", theMotionTracker.getChamberRadius())));
+	userInfoList->Add(new TNamed("ChamberHeight", Form("%e", theMotionTracker.getChamberHeight())));
+	userInfoList->Add(new TNamed("MeanVel", Form("%e", theMotionTracker.getMeanVel())));
+	userInfoList->Add(new TNamed("ReflectionLimit", Form("%i", theMotionTracker.getReflectionLimit())));
+	userInfoList->Add(new TNamed("DefaultPos", Form("%f %f %f", theMotionTracker.getDefaultPos().X(), theMotionTracker.getDefaultPos().Y(), theMotionTracker.getDefaultPos().Z())));
+	userInfoList->Add(new TNamed("DefaultVel", Form("%f %f %f", theMotionTracker.getDefaultVel().X(), theMotionTracker.getDefaultVel().Y(), theMotionTracker.getDefaultVel().Z())));
 	userInfoList->Add(new TNamed("DipolePosition", Form("%f %f %f", getDipolePosition().X(), getDipolePosition().Y(), getDipolePosition().Z())));
 	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
 	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
@@ -153,7 +157,7 @@ void SRKManager::writeEvent()
 	resultsTree->Fill();
 }
 
-void SRKManager::writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
+void SRKManager::writeAllSteps(std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes)
 {
 	for (unsigned int i = 0; i < stepRecord->size(); i++)
 	{
@@ -171,8 +175,6 @@ void SRKManager::makeTracks(int numTracks)
 
 bool SRKManager::precessSpinsAlongTracks(int numTracks)
 {
-	bool useDynamic = trackFilePath == "!dynamic";
-
 	clock_t t1, t2;
 	t1 = clock();
 
@@ -181,106 +183,24 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 		gRandom->SetSeed(randomSeed);
 	}
 	cout << "Using random seed: " << gRandom->GetSeed() << endl;
+	loadFields();
+	if(recordAllSteps)
+		{
+			stepRecord = new std::vector<SRKODEState>;
+			stepTimes = new std::vector<double>;
+		}
+		createResultsFile(resultsFilePath);
 
-	if(!useDynamic)
+	if(useDynamicTracking)
 	{
-		theMotionTracker.loadTrackFile(trackFilePath);
+		precessSpinsAlongTracksDynamic(numTracks);
 	}
 	else
 	{
-		theMotionTracker.makeCylinderGeometry();
+		precessSpinsAlongTracksWithTrackFile(numTracks);
 	}
 
-	TVector3 pos;
-	TVector3 vel;
-	TVector3 posOut;
-	TVector3 velOut;
-	double currentTime = 0;
-	bool lastTrack = false;
 
-	loadFields();
-
-	SRKMotionState theState(9);
-	SRKMotionState initialState(9);
-	std::vector<SRKMotionState>* stepRecord = nullptr; //Used for recording all steps
-	std::vector<double>* stepTimes = nullptr; //Used for recording all steps
-	if(recordAllSteps)
-	{
-		stepRecord = new std::vector<SRKMotionState>;
-		stepTimes = new std::vector<double>;
-	}
-
-	createResultsFile(resultsFilePath);
-
-	for (int i = 0; i < numTracks; i++)  //Track loop
-	{
-		//Starting point
-		if(useDynamic)
-		{
-			if(theMotionTracker.getManualTracking())
-			{
-				pos = theMotionTracker.getPos();
-				vel = theMotionTracker.getVel();
-			}
-			else
-			{
-				theMotionTracker.getRandomVelocityVectorAndPosition(pos, vel);
-			}
-
-			trackID = i;
-			lastTrack = false;
-
-		}
-		else
-		{
-			theMotionTracker.getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
-		}
-		updateMotionStatePosVel(theState, pos, vel, currentTime);
-		theState[6] = phiStart; //Phi
-		theState[7] = thetaStart; //Theta
-		setInitialState(theState);
-
-		if(i % 100 == 0) cout << "Spinning track: " << trackID << endl;
-
-		//Reflection point loop
-		do
-		{
-			if(useDynamic)
-			{
-				lastTrack = theMotionTracker.getNextTrackingPoint(pos, vel, currentTime);
-			}
-			else
-			{
-				theMotionTracker.getNextTrackTreeEntry(pos, vel, currentTime, trackID, lastTrack);
-
-			}
-
-			if(useAltStepping)
-			{
-				theSpinTracker.trackSpinAltA(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
-			}
-			else
-			{
-				theSpinTracker.trackSpin(theState, currentTime - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
-			}
-			updateMotionStatePosVel(theState, pos, vel, currentTime); //Use the next reflection point for next step
-			if(lastTrack) //Record at last point
-			{
-
-				if(stepRecord == NULL)
-				{
-					setFinalState(theState);
-					writeEvent(); //Write the final state only
-				}
-				else
-				{
-					writeAllSteps(stepRecord, stepTimes);
-				}
-				currentTime = 0;
-			}
-		} while (!lastTrack);
-	}
-	theMotionTracker.closeTrackFile();
 	closeResultsFile();
 	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError); //Prints mean and stdev, no plot
 
@@ -307,9 +227,122 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 	cout.unsetf(ios_base::floatfield);
 
 	return true;
+
 }
 
-void SRKManager::setInitialState(SRKMotionState& initialState)
+void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
+{
+	theMotionTracker.makeCylinderGeometry();
+	bool lastTrack = false;
+
+	SRKODEState theState(9);
+	SRKODEState initialState(9);
+
+	SRKMotionState currentMotionState,stateOut;
+	for (int i = 0; i < numTracks; i++)  //Track loop
+	{
+		theMotionTracker.getInitialState(currentMotionState);
+
+		trackID = i;
+
+		updateMotionStatePosVel(theState, currentMotionState);
+
+		theState[6] = phiStart; //Phi
+		theState[7] = thetaStart; //Theta
+		setInitialState(theState);
+
+		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
+
+		//Reflection point loop
+		do
+		{
+
+			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState,stateOut);
+
+
+			if(useAltStepping)
+			{
+				theSpinTracker.trackSpinAltA(theState, stateOut.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
+			else
+			{
+				theSpinTracker.trackSpin(theState, stateOut.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
+			updateMotionStatePosVel(theState, stateOut); //Use the next reflection point for next step
+			currentMotionState=stateOut;
+			if(lastTrack) //Record at last point
+			{
+
+				if(stepRecord == nullptr)
+				{
+					setFinalState(theState);
+					writeEvent(); //Write the final state only
+				}
+				else
+				{
+					writeAllSteps(stepRecord, stepTimes);
+				}
+			}
+		} while (!lastTrack);
+	}
+}
+void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
+{
+	theMotionTracker.loadTrackFile(trackFilePath);
+	bool lastTrack = false;
+
+	SRKODEState theState(9);
+	SRKODEState initialState(9);
+
+	SRKMotionState currentMotionState;
+	for (int i = 0; i < numTracks; i++)  //Track loop
+	{
+		theMotionTracker.getNextTrackTreeEntry(currentMotionState, trackID, lastTrack);
+
+		updateMotionStatePosVel(theState, currentMotionState);
+
+		theState[6] = phiStart; //Phi
+		theState[7] = thetaStart; //Theta
+		setInitialState(theState);
+
+		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
+
+		//Reflection point loop
+		do
+		{
+
+			theMotionTracker.getNextTrackTreeEntry(currentMotionState, trackID, lastTrack);
+
+
+			if(useAltStepping)
+			{
+				theSpinTracker.trackSpinAltA(theState, currentMotionState.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
+			else
+			{
+				theSpinTracker.trackSpin(theState, currentMotionState.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+			}
+			updateMotionStatePosVel(theState, currentMotionState); //Use the next reflection point for next step
+			if(lastTrack) //Record at last point
+			{
+
+				if(stepRecord == nullptr)
+				{
+					setFinalState(theState);
+					writeEvent(); //Write the final state only
+				}
+				else
+				{
+					writeAllSteps(stepRecord, stepTimes);
+				}
+			}
+		} while (!lastTrack);
+	}
+	theMotionTracker.closeTrackFile();
+}
+
+
+void SRKManager::setInitialState(SRKODEState& initialState)
 {
 	//cout << "-----------Initial------------" << endl;
 	//printMotionState(initialState);
@@ -321,7 +354,7 @@ void SRKManager::setInitialState(SRKMotionState& initialState)
 	time0 = static_cast<double>(initialState[8]);
 }
 
-void SRKManager::setFinalState(SRKMotionState& finalState)
+void SRKManager::setFinalState(SRKODEState& finalState)
 {
 	//cout << "-----------Final------------" << endl;
 	//printMotionState(finalState);
@@ -487,8 +520,8 @@ void SRKManager::precessSpinsAlongTracksParAndAnti(int numTracks)
 	precessSpinsAlongTracks(numTracks);
 
 	calcDeltaPhaseMean(runID);
-	double deltaOmega = deltaPhaseMean / getTimeLimit();
-	double deltaOmegaError = deltaPhaseError / getTimeLimit();
+	double deltaOmega = deltaPhaseMean / theMotionTracker.getTimeLimit();
+	double deltaOmegaError = deltaPhaseError / theMotionTracker.getTimeLimit();
 
 	cout << "Delta \\omega [rad // s]: " << scientific << setprecision(5) << deltaOmega << " +/- " << deltaOmegaError << endl;
 	double scaleFactor = 100. * 6.58211928E-016 / (4. * e0FieldStrength);

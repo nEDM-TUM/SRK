@@ -3,11 +3,14 @@
 #include <algorithm>
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #include <boost/numeric/odeint.hpp>
+
+#include "SRKODEState.h";
+
 using namespace boost::numeric::odeint;
 using namespace std;
 
 //typedef runge_kutta_cash_karp54< SRKMotionState > error_stepper_type;
-typedef runge_kutta_dopri5<SRKMotionState, SRKSpinFloat> error_stepper_type;
+typedef runge_kutta_dopri5<SRKODEState, SRKSpinFloat> error_stepper_type;
 
 typedef controlled_runge_kutta<error_stepper_type> controlled_stepper_type;
 
@@ -31,9 +34,9 @@ SRKSpinTracker::~SRKSpinTracker()
 
 }
 
-void SRKSpinTracker::trackSpin(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
+void SRKSpinTracker::trackSpin(SRKODEState& theState, double timeToTrack, std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes)
 {
-	runge_kutta4<SRKMotionState, SRKSpinFloat> stepper;
+	runge_kutta4<SRKODEState, SRKSpinFloat> stepper;
 	controlled_stepper_type controlled_stepper(default_error_checker<SRKSpinFloat, range_algebra, default_operations>(SRKSpinFloat(eps_abs), SRKSpinFloat(eps_rel), SRKSpinFloat(1.0), SRKSpinFloat(1.0)));
 
 #ifdef SRKSPINTRACKERDEBUG
@@ -45,11 +48,11 @@ void SRKSpinTracker::trackSpin(SRKMotionState& theState, double timeToTrack, std
 	{
 		if(constStepper)
 		{
-			integrate_const(stepper, theEquationOfMotion, theState, SRKSpinFloat(0.0), SRKSpinFloat(timeToTrack), SRKSpinFloat(initialStepSize), push_back_state_and_time(stepRecord, stepTimes));
+			integrate_const(stepper, theEquationOfMotion, theState, SRKSpinFloat(0.0), SRKSpinFloat(timeToTrack), SRKSpinFloat(initialStepSize), pushBackStateAndTime(stepRecord, stepTimes));
 		}
 		else
 		{
-			integrate_adaptive(controlled_stepper, theEquationOfMotion, theState, theState[8], theState[8] + SRKSpinFloat(timeToTrack), SRKSpinFloat(initialStepSize), push_back_state_and_time(stepRecord, stepTimes));
+			integrate_adaptive(controlled_stepper, theEquationOfMotion, theState, theState[8], theState[8] + SRKSpinFloat(timeToTrack), SRKSpinFloat(initialStepSize), pushBackStateAndTime(stepRecord, stepTimes));
 		}
 
 	}
@@ -73,7 +76,7 @@ void SRKSpinTracker::trackSpin(SRKMotionState& theState, double timeToTrack, std
 
 }
 
-void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack, std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes)
+void SRKSpinTracker::trackSpinAltA(SRKODEState& theState, double timeToTrack, std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes)
 {
 	SRKSpinFloat timeToTrackConv(timeToTrack);
 	error_stepper_type theStepper;
@@ -81,8 +84,8 @@ void SRKSpinTracker::trackSpinAltA(SRKMotionState& theState, double timeToTrack,
 	SRKSpinFloat t0 = theState[8];  //Initial time simulation started at
 	SRKSpinFloat deltaPhi;
 	SRKSpinFloat val;
-	SRKMotionState previousState(9);
-	SRKMotionState stateError(9);
+	SRKODEState previousState(9);
+	SRKODEState stateError(9);
 	bool potentialLastStep = false;
 	for (;;)
 	{

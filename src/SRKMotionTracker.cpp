@@ -18,12 +18,9 @@ using namespace std;
 
 //#define SRKTRACKDEBUG 1
 
-enum CYLSURF
-{
-	CYLSURF_RADIAL, CYLSURF_TOP, CYLSURF_BOTTOM
-};
 
 SRKMotionTracker::SRKMotionTracker()
+: theGeoManager("theManager", "SRK Simulation Geometry")
 {
 	trackID = 0;
 	trackTree = nullptr;
@@ -41,14 +38,13 @@ SRKMotionTracker::SRKMotionTracker()
 	diffuseReflectionProb = 1;
 	depolAtWallProb = 0;
 	numTracks = 0;
-	posForBranch = nullptr;
-	velForBranch = nullptr;
+	posForBranch = new TVector3();
+	velForBranch = new TVector3();
 	totalReflections = 0;
-	currentTime = 0.;
 	lastTrack = false;
 	currentEntry = 0;
 	manualTracking = false;
-	vel.SetXYZ(meanVel, 0, 0);
+	defaultState.vel.SetXYZ(meanVel, 0, 0);
 	additionalRandomVelZ = 0.;
 	velProfHistPath = "";
 	velProfHist = nullptr;
@@ -56,11 +52,12 @@ SRKMotionTracker::SRKMotionTracker()
 	meanFreePath = -1;
 	totalGasCollisions = 0;
 	theRotation.SetAngles(0, 0, 0);
-	theGeoManager = new TGeoManager("theManager", "SRK Simulation Geometry");
+//	theGeoManager = new TGeoManager("theManager", "SRK Simulation Geometry");
 	vacMat = new TGeoMaterial("Vacuum", 0, 0, 0); //Removed with GeoManager
 	vacMed = new TGeoMedium("Vacuum", 1, vacMat); //Removed with GeoManager
 	safety = 1e-9;
 	maxTrackSize = -1000; //defined as negative number for proper normal vector determination
+	maxTimePerStep=numeric_limits<double>::max();
 
 }
 
@@ -68,25 +65,26 @@ SRKMotionTracker::~SRKMotionTracker()
 {
 	gROOT->cd();
 	closeTrackFile();
-	delete theGeoManager;
+	delete posForBranch;
+	delete velForBranch;
 	delete velProfHist;
 
 }
 
 void SRKMotionTracker::makeCylinderGeometry()
 {
-	theGeoManager->ClearPhysicalNodes(true);
+	theGeoManager.ClearPhysicalNodes(true);
 	double maxDist = 2.01 * sqrt(chamberRadius * chamberRadius + chamberHeight * chamberHeight);
-	TGeoVolume* top = theGeoManager->MakeBox("world", vacMed, maxDist, maxDist, maxDist);
+	TGeoVolume* top = theGeoManager.MakeBox("world", vacMed, maxDist, maxDist, maxDist);
 
 	TGeoRotation *r1 = new TGeoRotation();
 	r1->SetAngles(chamberPhi, chamberTheta, chamberPsi); // all angles in degrees
-	TGeoVolume* chamber = theGeoManager->MakeTube("chamber", vacMed, 0, chamberRadius, chamberHeight * 0.5);
+	TGeoVolume* chamber = theGeoManager.MakeTube("chamber", vacMed, 0, chamberRadius, chamberHeight * 0.5);
 
-	theGeoManager->SetTopVolume(top);
+	theGeoManager.SetTopVolume(top);
 	top->AddNode(chamber, 1, r1);
 	cout << "Cylinderical Geometry made with r: " << chamberRadius << " h: " << chamberHeight << " rotated by Euler angles (deg): " << chamberPhi << " " << chamberTheta << " " << chamberPsi << endl;
-	theGeoManager->CloseGeometry();
+	theGeoManager.CloseGeometry();
 
 }
 
@@ -131,9 +129,9 @@ void SRKMotionTracker::makeTrackTree()
 	trackTree = new TTree("trackTree", "Initial points and points of reflection for particle in trap");
 	trackTree->Branch("trackID", &trackID, "trackID/I");
 	trackTree->Branch("lastTrack", &lastTrack, "lastTrack/O");
-	trackTree->Branch("time", &currentTime, "time/D");
-	trackTree->Branch("pos", "TVector3", &pos);
-	trackTree->Branch("vel", "TVector3", &vel);
+	trackTree->Branch("time", &currentState.time, "time/D");
+	trackTree->Branch("pos", "TVector3", &posForBranch);
+	trackTree->Branch("vel", "TVector3", &velForBranch);
 }
 
 void SRKMotionTracker::writeTrackToFile()
@@ -161,7 +159,7 @@ bool SRKMotionTracker::loadTrackFile(TString filePath)
 	trackTree = (TTree*) trackFile.Get("trackTree");
 	trackTree->SetBranchAddress("trackID", &trackID);
 	trackTree->SetBranchAddress("lastTrack", &lastTrack);
-	trackTree->SetBranchAddress("time", &currentTime);
+	trackTree->SetBranchAddress("time", &currentState.time);
 	trackTree->SetBranchAddress("pos", &posForBranch);
 	trackTree->SetBranchAddress("vel", &velForBranch);
 	currentEntry = 0;
@@ -169,24 +167,29 @@ bool SRKMotionTracker::loadTrackFile(TString filePath)
 
 }
 
-void SRKMotionTracker::getNextTrackTreeEntry(TVector3& posOut, TVector3& velOut, double& currentTimeOut, int& trackIDOut, bool& lastTrackOut)
+void SRKMotionTracker::getNextTrackTreeEntry(SRKMotionState& stateOut, int& trackIDOut, bool& lastTrackOut)
 {
 	trackTree->GetEntry(currentEntry);
 
-	posOut = *posForBranch;
+	stateOut.pos = *posForBranch;
+	stateOut.vel = *velForBranch;
 
-	velOut = *velForBranch;
-
-	currentTimeOut = currentTime;
 	trackIDOut = trackID;
 	lastTrackOut = lastTrack;
 	currentEntry++;
 }
 
+void SRKMotionTracker::fillTrackTree()
+{
+	*posForBranch=currentState.pos;
+	*velForBranch=currentState.vel;
+	trackTree->Fill();
+}
+
 void SRKMotionTracker::makeTracks(int numTracksToAdd, TString inpTrackFilePath)
 {
-	bool useDynamic = false; // For testing whether it's better to keep the tree in memory or let ROOT buffer as it goes
-	if(useDynamic)
+	bool useDynamicLoading = false; // For testing whether it's better to keep the tree in memory or let ROOT buffer as it goes
+	if(useDynamicLoading)
 	{
 		if(trackTree == nullptr)
 		{
@@ -199,7 +202,7 @@ void SRKMotionTracker::makeTracks(int numTracksToAdd, TString inpTrackFilePath)
 	}
 	makeTracks(numTracksToAdd);
 
-	if(useDynamic)
+	if(useDynamicLoading)
 	{
 		openTrackFile(inpTrackFilePath);
 	}
@@ -258,12 +261,12 @@ TVector3 SRKMotionTracker::getRandomVelocityVector()
 	return velOut;
 }
 
-void SRKMotionTracker::getRandomVelocityVectorAndPosition(TVector3& posOut, TVector3& velOut)
+void SRKMotionTracker::getRandomVelocityVectorAndPosition(SRKMotionState& stateOut)
 {
 
 	//Begin with random points
-	posOut = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
-	velOut = getRandomVelocityVector();  //Also does not account for gravity
+	stateOut.pos = getRandomPointInCylinder(); //Eventually need to make this account for gravity based density
+	stateOut.vel = getRandomVelocityVector();  //Also does not account for gravity
 
 }
 
@@ -297,52 +300,61 @@ bool SRKMotionTracker::loadVelProfHist()
 	return true;
 }
 
+void SRKMotionTracker::getInitialState(SRKMotionState& stateOut)
+{
+	if(!manualTracking)
+	{
+		getRandomVelocityVectorAndPosition(stateOut);
+	}
+	else
+	{
+		stateOut=defaultState;
+	}
+	stateOut.type=SRKStepPointType::START;
+
+}
+
 void SRKMotionTracker::makeTrack(int inpTrackID)
 {
 
 	trackID = inpTrackID;
+	getInitialState(currentState);
 
-	currentTime = 0;
-
-	if(!manualTracking)
-	{
-		getRandomVelocityVectorAndPosition(pos, vel);
-	}
-
-	trackTree->Fill(); //Record initial point
+	fillTrackTree(); //Record initial point
 
 #ifdef SRKTRACKDEBUG
 	//Initial pos/vel
 	cout << "___________________________________________________________________________________________" << endl;
 	cout << "Initial Position:"<< endl;
-	cout << "Pos: "; pos.Print();
-	cout << "Vel: "; vel.Print();
+	currentState.print();
 #endif
 
 	lastTrack = false;
+	SRKMotionState stateOut;
 	for (currentEntry = 0; currentEntry < reflectionLimit && !lastTrack; currentEntry++)
 	{
 
-		getNextTrackingPoint(pos, vel, currentTime);
-		trackTree->Fill();
+		getNextTrackingPoint(currentState,stateOut);
+		currentState=stateOut;
+		fillTrackTree();
 
 	}
 
 	return;
 }
 
-bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, double& timeIn)
+bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMotionState& stateOut)
 {
 
 #ifdef SRKTRACKDEBUG
 	cout << "Before reflection: " << endl;
-	cout << "Pos: "; posIn.Print();
-	cout << "Vel: "; velIn.Print();
-	cout << "Time: " << timeIn << endl;
+	stateIn.print();
 #endif
+
 	lastTrack = false;
 	TVector3 posRef, velRef;
-	double timeToReflection = getNextReflection(posIn, velIn, posRef, velRef);
+	double timeToWall = getNextReflection(stateIn,stateOut);
+
 #ifdef SRKTRACKDEBUG
 	cout << "Time till reflection: " << timeToReflection << endl;
 #endif
@@ -352,18 +364,20 @@ bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, do
 	if(meanFreePath > 0)
 	{
 		double mfpDist = -meanFreePath * log(1. - gRandom->Rndm());  //Randomly determine when the next collision will happen
-		meanFreePathTime = mfpDist / velIn.Mag();
+		meanFreePathTime = mfpDist / stateIn.vel.Mag();
+
 #ifdef SRKTRACKDEBUG
 		cout << "Mean Free Path Time: " << meanFreePathTime << endl;
 #endif
 	}
 
 	//If time limit happens earlier than when the next reflection/meanfreepath has, stop it
-	if(timeIn + timeToReflection >= timeLimit && timeIn + meanFreePathTime >= timeLimit)
+	if(stateIn.time + timeToWall >= timeLimit && stateIn.time + meanFreePathTime >= timeLimit)
 	{
 
-		posIn += velIn * (timeLimit - timeIn);
-		timeIn = timeLimit;
+		stateOut.pos += stateIn.vel * (timeLimit - stateIn.time);
+		stateOut.time = timeLimit;
+		stateOut.type=SRKStepPointType::TIMELIMIT;
 		lastTrack = true;
 		totalReflections = 0;
 		totalGasCollisions = 0;
@@ -371,24 +385,27 @@ bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, do
 	else
 	{
 		//Check to see if mean free path collision happens earlier
-		if(meanFreePathTime < timeToReflection)
+		if(meanFreePathTime < timeToWall)
 		{
-			timeIn += meanFreePathTime;
-			velIn = getRandomVelocityVector(); //Either samples the velocity profile or does random direction
-			posIn += velIn * meanFreePathTime;
+			stateOut.time += meanFreePathTime;
+			stateOut.vel = getRandomVelocityVector(); //Either samples the velocity profile or does random direction
+			stateOut.pos += stateIn.vel * meanFreePathTime;
+			stateOut.type=SRKStepPointType::GASSCATTER;
 			lastTrack = false;
 			totalGasCollisions++;
 		}
 		else
 		{
-			timeIn += timeToReflection;
-			posIn = posRef;
-			velIn = velRef;
+			stateOut.time += timeToWall;
+			stateOut.vel = posRef;
+			stateOut.pos = velRef;
+			stateOut.type=SRKStepPointType::REFLECTION;
 			lastTrack = false;
 			totalReflections++;
 
 			if(gRandom->Rndm() < depolAtWallProb)
 			{
+				stateOut.type=SRKStepPointType::DEPOLARIZED;
 				lastTrack=true;
 			}
 
@@ -402,55 +419,52 @@ bool SRKMotionTracker::getNextTrackingPoint(TVector3& posIn, TVector3& velIn, do
 
 #ifdef SRKTRACKDEBUG
 	cout << "After reflection: " << endl;
-	cout << "Pos: "; posIn.Print();
-	cout << "Vel: "; velIn.Print();
-	cout << "Time: " << timeIn << endl;
+	stateOut.print();
 	cout << "___________________________________________________________________________________________" << endl;
 #endif
 
 	return lastTrack;
 }
 
-double SRKMotionTracker::getNextReflection(TVector3 pos0, TVector3 vel0, TVector3& posOut, TVector3& velOut)
+double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut)
 {
 
-	double point[3] = { pos0.X(), pos0.Y(), pos0.Z() };
+	double point[3] = { stateIn.pos.X(), stateIn.pos.Y(), stateIn.pos.Z() };
 
-	TVector3 directionVec = vel0;
+	TVector3 directionVec = stateIn.vel;
 	directionVec.SetMag(1);
 	double direction[3] = { directionVec.X(), directionVec.Y(), directionVec.Z() };
 
-	theGeoManager->InitTrack(point, direction);
+	theGeoManager.InitTrack(point, direction);
 
 #ifdef SRKTRACKDEBUG
 	cout << "Starting in: "; theGeoManager->FindNode(point[0],point[1],point[2])->Print();
 	cout << "Currently in: " << theGeoManager->GetCurrentVolume()->GetName() << endl;
 #endif
-	theGeoManager->FindNextBoundary(maxTrackSize);
-	double distance = theGeoManager->GetStep();
+	theGeoManager.FindNextBoundary(maxTrackSize);
+	double distance = theGeoManager.GetStep();
 
 //	TGeoShape* theShape=theGeoManager->GetCurrentVolume()->GetShape();
 //	double distance = theShape->DistFromInside(point, direction);
 	distance -= safety;
-	TVector3 step = vel0;
-	step.SetMag(distance);
+	directionVec.SetMag(distance); //Now at stepsize
 
-	posOut = pos0 + step;
+	stateOut.pos = stateIn.pos + directionVec;
 #ifdef SRKTRACKDEBUG
 	cout << "Distance to boundary: " << distance << endl;
 #endif
 
-	double minTime = distance / vel0.Mag();
+	double minTime = distance / stateIn.vel.Mag();
 #ifdef SRKTRACKDEBUG
 	cout << "Time to Boundary: " << minTime << endl;
 #endif
 	if(minTime < 0) cout << "Error" << endl;
 
-	point[0] = posOut.X();
-	point[1] = posOut.Y();
-	point[2] = posOut.Z();
+	point[0] = stateOut.pos.X();
+	point[1] = stateOut.pos.Y();
+	point[2] = stateOut.pos.Z();
 
-	theGeoManager->SetCurrentPoint(point);
+	theGeoManager.SetCurrentPoint(point);
 	//	theGeoManager->SetCurrentPoint(0,0,0);
 	//	theGeoManager->SetCurrentDirection(0,1,0);
 //	theGeoManager->Step(true,false);
@@ -462,7 +476,7 @@ double SRKMotionTracker::getNextReflection(TVector3 pos0, TVector3 vel0, TVector
 #endif
 	const double* normArray = nullptr;
 //	theGeoManager->FindNextBoundary();
-	normArray = theGeoManager->FindNormal();
+	normArray = theGeoManager.FindNormal();
 
 //
 
@@ -474,10 +488,10 @@ double SRKMotionTracker::getNextReflection(TVector3 pos0, TVector3 vel0, TVector
 	cout << "Inner Normal: "; norm.Print();
 #endif
 
-	velOut = getReflectedVector(diffuseReflectionProb, vel0, norm);
-	velOut.SetMag(vel0.Mag());
+	stateOut.vel = getReflectedVector(diffuseReflectionProb, stateIn.vel, norm);
+	stateOut.vel.SetMag(stateIn.vel.Mag());
 #ifdef SRKTRACKDEBUG
-	cout << "Reflected Vel: "; velOut.Print();
+	cout << "Reflected Vel: "; stateOut.vel.Print();
 #endif
 
 	return minTime;
@@ -621,5 +635,5 @@ void SRKMotionTracker::drawTrack(int trackIDToDraw)
 
 	pl1->SetLineColor(kBlue);
 	pl1->Draw();
-	theGeoManager->Draw("same");
+	theGeoManager.Draw("same");
 }

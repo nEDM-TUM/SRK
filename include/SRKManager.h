@@ -40,6 +40,7 @@ public:
 	inline bool isRecordAllSteps(){return recordAllSteps;}
 	inline bool isUseAltStepping(){ return useAltStepping;}
 	inline bool isParallelFields(){ return parallelFields;}
+	inline bool isUseDynamicTracking(){ return useDynamicTracking;}
 	inline int getRandomSeed(){ return randomSeed;}
 	inline double getB0FieldStrength(){ return b0FieldStrength;}
 	inline double getE0FieldStrength(){ return e0FieldStrength;}
@@ -50,9 +51,9 @@ public:
 	inline double getPhaseError(){return phaseError;}
 	inline double getPhiStart(){return phiStart;}
 	inline double getThetaStart(){return thetaStart;}
-	inline double getZeta(){return bGradFieldStrength*getChamberRadius()/(2*b0FieldStrength);}
-	inline double getEta(){return getChamberRadius()*getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
-	inline double getOmega0(){return getGyromagneticRatio()*b0FieldStrength;}
+	inline double getZeta(){return bGradFieldStrength*theMotionTracker.getChamberRadius()/(2*b0FieldStrength);}
+	inline double getEta(){return theMotionTracker.getChamberRadius()*theSpinTracker.getGyromagneticRatio()*e0FieldStrength/(299792458.*299792458.);}
+	inline double getOmega0(){return theSpinTracker.getGyromagneticRatio()*b0FieldStrength;}
 	inline TVector3 getDipolePosition(){ return dipolePosition;}
 	inline TVector3 getDipoleDirection(){ return dipoleDirection;}
 	inline TVector3 getE0FieldDirection(){ return e0FieldDirection;}
@@ -61,32 +62,14 @@ public:
 	inline TString getResultsFilePath() { return resultsFilePath;}
 	inline TString getRunID() { return runID;}
 	inline TString getVelProfHistPath(){return theMotionTracker.getVelProfHistPath();}
-
-	inline bool isConstStepper(){return theSpinTracker.getConstStepper();}
-	inline int getStepsTaken(){return theSpinTracker.getStepsTaken();}
-	inline double getGyromagneticRatio(){return theSpinTracker.getGyromagneticRatio();}
-	inline double getEPSAbs(){return theSpinTracker.getEPSAbs();}
-	inline double getEPSRel(){return theSpinTracker.getEPSRel();}
-
-	inline bool isUse2D(){return theMotionTracker.getUse2D();}
-	inline bool isManualTracking(){return theMotionTracker.getManualTracking();}
-	inline int getReflectionLimit(){return theMotionTracker.getReflectionLimit();}
-	inline double getTimeLimit(){return theMotionTracker.getTimeLimit();}
-	inline double getDiffuseReflectionProb(){return theMotionTracker.getDiffuseReflectionProb();}
-	inline double getChamberRadius(){return theMotionTracker.getChamberRadius();}
-	inline double getChamberHeight(){return theMotionTracker.getChamberHeight();}
-	inline double getMeanVel(){return theMotionTracker.getMeanVel();}
-	inline double getMass(){return theMotionTracker.getMass();}
-	inline double getMeanFreePath(){return theMotionTracker.getMeanFreePath();}
-	inline double getAdditionalRandomVelZ(){return theMotionTracker.getAdditionalRandomVelZ();}
-	inline double getDepolAtWallProb(){return theMotionTracker.getDepolAtWallProb();}
-	inline TVector3 getPos(){return theMotionTracker.getPos();}
-	inline TVector3 getVel(){return theMotionTracker.getVel();}
+	inline SRKMotionTracker* getSRKMotionTracker(){return &theMotionTracker;}
+	inline SRKSpinTracker* getSRKSpinTracker(){return &theSpinTracker;}
 
 	//Setters
 	inline void setRecordAllSteps(bool inp){recordAllSteps=inp;}
 	inline void setUseAltStepping(bool inp){useAltStepping=inp;}
 	inline void setParallelFields(bool inp){parallelFields=inp;}
+	inline void setUseDynamicTracking(bool inp){useDynamicTracking=inp;}
 	inline void setRandomSeed(const int inp){ randomSeed=inp;} /// If set to non zero, same seed will be used every simulation run until set again
 	inline void setB0FieldStrength(double inp){b0FieldStrength=inp;}
 	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
@@ -97,51 +80,30 @@ public:
 	inline void setDipoleFieldStrength(double inp){dipoleFieldStrength=inp;}
 	inline void setDipolePosition(TVector3 inp){dipolePosition=inp;}
 	inline void setDipoleDirection(TVector3 inp){dipoleDirection=inp;}
-	inline void setTrackFilePath(TString inp) {trackFilePath=inp;}
+	inline void setTrackFilePath(TString inp) {trackFilePath=inp; if(trackFilePath=="!dynamic") useDynamicTracking=true;}
 	inline void setResultsFilePath(TString inp) {resultsFilePath=inp;}
 	inline void setDefaultResultsDir(TString inp) {defaultResultsDir=inp; resultsFilePath = defaultResultsDir + runID+".root";}
 	inline void setRunID(TString inp) {runID=inp; resultsFilePath = defaultResultsDir + runID+".root";}
 	inline void setE0FieldDirection(TVector3 inp){e0FieldDirection=inp;}
 	inline void setB0FieldDirection(TVector3 inp){b0FieldDirection=inp;}
 
-	inline void setConstStepper(bool inp){theSpinTracker.setConstStepper(inp);}
-	inline void setGyromagneticRatio(double inp){theSpinTracker.setGyromagneticRatio(inp);}
-	inline void setEPSAbs(double inp){theSpinTracker.setEPSAbs(inp);}
-	inline void setEPSRel(double inp){theSpinTracker.setEPSRel(inp);}
-	inline void setInitialStepSize(double inp){theSpinTracker.setInitialStepSize(inp);}
-
-	inline void setManualTracking(bool inp){ theMotionTracker.setManualTracking(inp);}
-	inline void setUse2D(bool inp){theMotionTracker.setUse2D(inp);}
-	inline void setReflectionLimit(int inp){theMotionTracker.setReflectionLimit(inp);}
-	inline void setTimeLimit(double inp){theMotionTracker.setTimeLimit(inp);}
-	inline void setDiffuseReflectionProb(double inp){theMotionTracker.setDiffuseReflectionProb(inp);}
-	inline void setMeanVel(double inp){theMotionTracker.setMeanVel(inp);}
-	inline void setMass(const double inp){theMotionTracker.setMass(inp);}
-	inline void setMeanFreePath(const double inp){theMotionTracker.setMeanFreePath(inp);}
-	inline void setAdditionalRandomVelZ(double inp){theMotionTracker.setAdditionalRandomVelZ(inp);}
-	inline void setChamberRadius(double inp){theMotionTracker.setChamberRadius(inp);}
-	inline void setChamberHeight(double inp){theMotionTracker.setChamberHeight(inp);}
-	inline void setChamberRotation(double phi,double theta, double psi){theMotionTracker.setChamberRotation(phi,theta, psi);}
-	inline void setVelByOmegaSteyerl(double OmegaSteyerl){theMotionTracker.setMeanVel(fabs(OmegaSteyerl*getGyromagneticRatio()*b0FieldStrength*getChamberRadius()));}
-	inline void setDepolAtWallProb(const double inp){theMotionTracker.setDepolAtWallProb(inp);}
-	inline void setPos(const TVector3& inp){ theMotionTracker.setPos(inp);}
-	inline void setVel(const TVector3& inp){ theMotionTracker.setVel(inp);}
-	inline void setVelProfHistPath(const TString inp){theMotionTracker.setVelProfHistPath(inp);}
-
 
 protected:
 	void createResultsFile(TString resultsFilePath); /// Create and leave open the root file which stores the tree of results and the macrofile used to create them
 	void closeResultsFile();  /// Closes the result file
-	void setInitialState(SRKMotionState& initialState); /// Takes an initial motion state and loads it into variables used by resultsTree
-	void setFinalState(SRKMotionState& finalState); /// Takes a final motion state and loads it into variables used by resultsTree
+	void setInitialState(SRKODEState& initialState); /// Takes an initial motion state and loads it into variables used by resultsTree
+	void setFinalState(SRKODEState& finalState); /// Takes a final motion state and loads it into variables used by resultsTree
 	void writeEvent();  /// Fills tree
-	void writeAllSteps(std::vector<SRKMotionState>* stepRecord, std::vector<double>* stepTimes);  /// Takes a vector of the results of each step and writes them to the tree
+	void writeAllSteps(std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes);  /// Takes a vector of the results of each step and writes them to the tree
 	void loadFields();  /// Load the electric and magnetic fields (could load ROOT files for interpolation)
 	void calcDeltaPhaseMean(TString inpRunID); /// Given a parallell
 	SRKRunStats calcResultsFileStats(TString filePath, bool useWrapping); /// Calculates some statistics for run file
 	double calculateSzDetectionProbability(double phi, double theta); /// Calculates probability of detecting spin in the z+ direction
 	bool fileExists(TString filePath);
 	bool fileExistsAndNotZombie(TString strFileName);
+
+	void precessSpinsAlongTracksDynamic(int numTracks);
+	void precessSpinsAlongTracksWithTrackFile(int numTracks);
 
 	TVector3 pos0, pos, vel0, vel; //For recording
 	double phi0, phi, theta0, theta; //For recording
@@ -156,6 +118,7 @@ protected:
 	bool useAltStepping; //Whether to use an alternate stepping method
 	bool parallelFields; //Whether the electric field should be set parallel or antiparallel
 
+	bool useDynamicTracking;
 	TString trackFilePath; /// Path for tracks through geometry file
 	TString resultsFilePath; /// Path for results of simulation
 	TString defaultResultsDir; /// The default directory results are stored in
@@ -181,6 +144,9 @@ protected:
 	double dipoleFieldStrength; /// Strength of magnetic dipole
 	TVector3 dipolePosition; /// position of magnetic dipole
 	TVector3 dipoleDirection; /// Direction of magnetic dipole
+
+	std::vector<SRKODEState>* stepRecord = nullptr; //Used for recording all steps
+	std::vector<double>* stepTimes = nullptr; //Used for recording all steps
 
 };
 
