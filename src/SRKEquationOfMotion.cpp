@@ -5,6 +5,8 @@
 
 using namespace std;
 
+//#define SRKEQOFMNONRELLINEARSPHEREICALDEBUG 1
+
 SRKEquationOfMotion::SRKEquationOfMotion()
 {
 	theGlobalField=nullptr;
@@ -60,6 +62,7 @@ void SRKEquationOfMotion::SRKEqOfMNonRelLinearSpherical(const SRKODEState& x, SR
 
 	dxdt[6] = dphi;
 	dxdt[7] = dthetaPrime;
+
 
 #ifdef SRKEQOFMNONRELLINEARSPHEREICALDEBUG
 	cout << "InitialState: ";

@@ -37,6 +37,13 @@ void SRKGlobalField::addField(SRKField* f)
 
 void SRKGlobalField::getFieldValue(const double* point, double* outField) const
 {
+	for (unsigned int i = 0; i < 9; ++i)
+	{
+
+		outField[i]=0;
+
+	}
+
 	for (unsigned int i = 0; i < theFields.size(); ++i)
 	{
 

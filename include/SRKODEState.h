@@ -36,7 +36,6 @@ using SRKODEState= std::vector<SRKSpinFloat>;  //Presumes 9 entries: X,Y,Z,Vx,Vy
 void setMotionState(SRKODEState& outState, const TVector3* pos, const TVector3* vel, const double phi, const double theta);
 void updateMotionStatePosVel(SRKODEState& outState, const SRKMotionState& inpMotionState);
 void printMotionState(const SRKODEState& theState);
-void printMotionState(const SRKODEState& theState);
 
 ////////////////////////////////////////////////////////////////
 /// struct push_back_state_and_time

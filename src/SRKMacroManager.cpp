@@ -217,6 +217,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setBGradFieldStrength"] = [&](string inp){	theManager->setBGradFieldStrength(stod(inp));};
 	commandMap["setEGradFieldStrength"] = [&](string inp){	theManager->setEGradFieldStrength(stod(inp));};
 	commandMap["setDipoleFieldStrength"] = [&](string inp){	theManager->setDipoleFieldStrength(stod(inp));};
+	commandMap["setAdditionalRandomVelZ"] = [&](string inp){theManager->getSRKMotionTracker()->setAdditionalRandomVelZ(stod(inp));};
 	commandMap["setEPSAbs"] = [&](string inp){	theManager->getSRKSpinTracker()->setEPSAbs(stod(inp));};
 	commandMap["setEPSRel"] = [&](string inp){	theManager->getSRKSpinTracker()->setEPSRel(stod(inp));};
 	commandMap["setInitialStepSize"] = [&](string inp){	theManager->getSRKSpinTracker()->setInitialStepSize(stod(inp));};

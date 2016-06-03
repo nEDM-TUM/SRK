@@ -23,6 +23,8 @@ int main(int argc, char* argv[])
 	delete gRandom;
 	gRandom = new TRandom3(0);
 
+	cout << scientific << endl;
+
 
 	//Command Line Execution
 	if(argc >2)

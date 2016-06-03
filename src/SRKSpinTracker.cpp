@@ -4,7 +4,7 @@
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #include <boost/numeric/odeint.hpp>
 
-#include "SRKODEState.h";
+#include "SRKODEState.h"
 
 using namespace boost::numeric::odeint;
 using namespace std;
@@ -15,6 +15,7 @@ typedef runge_kutta_dopri5<SRKODEState, SRKSpinFloat> error_stepper_type;
 typedef controlled_runge_kutta<error_stepper_type> controlled_stepper_type;
 
 //#define SRKSPINTRACKERDEBUG 1
+
 SRKSpinTracker::SRKSpinTracker()
 {
 	eps_abs = 1.e-7;

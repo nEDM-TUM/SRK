@@ -34,7 +34,7 @@ public:
 
 	void makeCylinderGeometry();  /// Make a cylindrical geometry
 	bool getNextTrackingPoint(const SRKMotionState& stateIn, SRKMotionState& stateOut); // Gets the next tracking point (typically point of reflection) returns true if it's the last track
-	double getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut); /// Return time till next reflection
+	void getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut); /// Return time till next reflection
 
 	TVector3 getRandomDirection();  //G/ et's a random direction
 	TVector3 getRandomPointInCylinder(); // /Get's a randomly sampled point in the a cylinder
@@ -132,7 +132,7 @@ protected:
 	double safety;  /// A small distance unimportant for the physical problem to mitigate floating point errors
 	double maxTrackSize;  /// Current implementation with TGeoManger requires a negative number
 
-	TFile trackFile;
+	TFile* trackFile;
 
 	//Tracking Variables
 	SRKMotionState currentState;

@@ -15,12 +15,15 @@
 #include "SRKODEState.h"
 #include "SRKMotionState.h"
 
+//#define SRKMANAGERDEBUG 1
+
 using namespace std;
 
 static const int EVENT_STDOUT_ANNOUNCE_RATE = 100;
 
 SRKManager::SRKManager()
 {
+	resultsFile = nullptr;
 	resultsTree = nullptr;
 	useDynamicTracking=true;
 	recordAllSteps = false;
@@ -49,27 +52,31 @@ SRKManager::SRKManager()
 
 SRKManager::~SRKManager()
 {
-	if(resultsFile.IsOpen())
+	if(resultsFile != nullptr)
 	{
-		closeResultsFile();
+		if(resultsFile->IsOpen())
+		{
+			closeResultsFile();
+		}
+		delete resultsFile;
 	}
 }
 
 void SRKManager::createResultsFile(TString resultsFilePath)
 {
-	if(resultsFile.IsOpen())
+	if(resultsFile != nullptr && resultsFile->IsOpen())
 	{
-		resultsFile.Close();
+		resultsFile->Close();
 	}
-	resultsFile.Open(resultsFilePath, "RECREATE");
+	resultsFile=new TFile(resultsFilePath, "RECREATE");
 
-	if(resultsFile.IsZombie() || !resultsFile.IsOpen())
+	if(resultsFile->IsZombie() || !resultsFile->IsOpen())
 	{
 		cout << "Error opening results file: " << resultsFilePath << endl;
 		return;
 
 	}
-	resultsFile.cd();
+	resultsFile->cd();
 	resultsTree = new TTree("hitTree", "Initial and final states after reflections and spin tracking");
 	resultsTree->Branch("trackID", &trackID, "trackID/I");
 	resultsTree->Branch("time0", &time0, "time0/D");
@@ -125,9 +132,11 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
 	userInfoList->Add(new TNamed("B0FieldDirection", Form("%f %f %f", getB0FieldDirection().X(), getB0FieldDirection().Y(), getB0FieldDirection().Z())));
 
-	resultsFile.Write("", TObject::kOverwrite);
+	resultsFile->Write("", TObject::kOverwrite);
 
-	resultsFile.Close();
+	resultsFile->Close();
+	delete resultsFile;
+	resultsFile = nullptr;
 	resultsTree = nullptr;
 }
 
@@ -185,11 +194,12 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 	cout << "Using random seed: " << gRandom->GetSeed() << endl;
 	loadFields();
 	if(recordAllSteps)
-		{
-			stepRecord = new std::vector<SRKODEState>;
-			stepTimes = new std::vector<double>;
-		}
-		createResultsFile(resultsFilePath);
+	{
+		stepRecord = new std::vector<SRKODEState>;
+		stepTimes = new std::vector<double>;
+	}
+
+	createResultsFile(resultsFilePath);
 
 	if(useDynamicTracking)
 	{
@@ -236,7 +246,7 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 	bool lastTrack = false;
 
 	SRKODEState theState(9);
-	SRKODEState initialState(9);
+//	SRKODEState initialState(9);
 
 	SRKMotionState currentMotionState,stateOut;
 	for (int i = 0; i < numTracks; i++)  //Track loop
@@ -250,6 +260,12 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		theState[6] = phiStart; //Phi
 		theState[7] = thetaStart; //Theta
 		setInitialState(theState);
+		#ifdef SRKMANAGERDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "Initial Position:"<< endl;
+			printMotionState(theState);
+		#endif
 
 		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
 
@@ -258,7 +274,6 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		{
 
 			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState,stateOut);
-
 
 			if(useAltStepping)
 			{
@@ -270,12 +285,26 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			}
 			updateMotionStatePosVel(theState, stateOut); //Use the next reflection point for next step
 			currentMotionState=stateOut;
+			#ifdef SRKMANAGERDEBUG
+				//Initial pos/vel
+				cout << "___________________________________________________________________________________________" << endl;
+				cout << "State after step:"<< endl;
+				printMotionState(theState);
+			#endif
+
+
 			if(lastTrack) //Record at last point
 			{
 
 				if(stepRecord == nullptr)
 				{
 					setFinalState(theState);
+					#ifdef SRKMANAGERDEBUG
+						//Initial pos/vel
+						cout << "___________________________________________________________________________________________" << endl;
+						cout << "FinalState:"<< endl;
+						printMotionState(theState);
+					#endif
 					writeEvent(); //Write the final state only
 				}
 				else

@@ -124,7 +124,7 @@ protected:
 	TString defaultResultsDir; /// The default directory results are stored in
 	TString runID; /// An identifying number/string for the simulation run
 
-	TFile resultsFile; /// File where results are stored
+	TFile* resultsFile; /// File where results are stored
 	TTree* resultsTree; /// Tree where results are stored
 
 	double phaseMean, phaseError;

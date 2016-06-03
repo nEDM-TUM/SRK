@@ -23,6 +23,7 @@ SRKMotionTracker::SRKMotionTracker()
 : theGeoManager("theManager", "SRK Simulation Geometry")
 {
 	trackID = 0;
+	trackFile = nullptr;
 	trackTree = nullptr;
 	reflectionLimit = numeric_limits<int>::max();
 	use2D = false;
@@ -52,7 +53,6 @@ SRKMotionTracker::SRKMotionTracker()
 	meanFreePath = -1;
 	totalGasCollisions = 0;
 	theRotation.SetAngles(0, 0, 0);
-//	theGeoManager = new TGeoManager("theManager", "SRK Simulation Geometry");
 	vacMat = new TGeoMaterial("Vacuum", 0, 0, 0); //Removed with GeoManager
 	vacMed = new TGeoMedium("Vacuum", 1, vacMat); //Removed with GeoManager
 	safety = 1e-9;
@@ -64,7 +64,11 @@ SRKMotionTracker::SRKMotionTracker()
 SRKMotionTracker::~SRKMotionTracker()
 {
 	gROOT->cd();
-	closeTrackFile();
+	if(trackFile != nullptr)
+	{
+		closeTrackFile();
+	}
+	delete trackFile;
 	delete posForBranch;
 	delete velForBranch;
 	delete velProfHist;
@@ -81,6 +85,7 @@ void SRKMotionTracker::makeCylinderGeometry()
 	r1->SetAngles(chamberPhi, chamberTheta, chamberPsi); // all angles in degrees
 	TGeoVolume* chamber = theGeoManager.MakeTube("chamber", vacMed, 0, chamberRadius, chamberHeight * 0.5);
 
+
 	theGeoManager.SetTopVolume(top);
 	top->AddNode(chamber, 1, r1);
 	cout << "Cylinderical Geometry made with r: " << chamberRadius << " h: " << chamberHeight << " rotated by Euler angles (deg): " << chamberPhi << " " << chamberTheta << " " << chamberPsi << endl;
@@ -91,14 +96,13 @@ void SRKMotionTracker::makeCylinderGeometry()
 void SRKMotionTracker::closeTrackFile()
 {
 
-	if(trackFile.IsOpen())
+	if(trackFile != nullptr && trackFile->IsOpen())
 	{
-		trackFile.Close();
+		trackFile->Close();
 	}
 	else
 	{
 		delete trackTree;
-		trackTree = nullptr;
 	}
 	trackTree = nullptr;
 	trackID = 0;
@@ -111,12 +115,17 @@ void SRKMotionTracker::closeTrackFile()
 
 void SRKMotionTracker::openTrackFile(TString inpTrackFilePath)
 {
-	if(trackFile.IsOpen())
+	if(trackFile != nullptr && trackFile->IsOpen())
 	{
 		closeTrackFile();
 	}
-	trackFile.Open(inpTrackFilePath, "RECREATE");
-	trackFile.cd();
+	trackFile=new TFile(inpTrackFilePath, "RECREATE");
+	if(trackFile->IsZombie() || !trackFile->IsOpen())
+	{
+		cout << "Error opening track file: " << inpTrackFilePath << endl;
+		return;
+	}
+	trackFile->cd();
 	if(trackTree == nullptr)
 	{
 		makeTrackTree();
@@ -136,13 +145,14 @@ void SRKMotionTracker::makeTrackTree()
 
 void SRKMotionTracker::writeTrackToFile()
 {
-	if(trackFile.IsZombie() || !trackFile.IsOpen())
+
+	if(trackFile == nullptr || trackFile->IsZombie() || !trackFile->IsOpen())
 	{
 		cout << "Error track file not open." << endl;
 		return;
 
 	}
-	trackFile.cd();
+	trackFile->cd();
 
 	trackTree->Write("", TObject::kOverwrite);
 }
@@ -150,13 +160,13 @@ void SRKMotionTracker::writeTrackToFile()
 bool SRKMotionTracker::loadTrackFile(TString filePath)
 {
 	closeTrackFile(); //Close if already open
-	trackFile.Open(filePath, "READ");
-	if(trackFile.IsZombie() || !trackFile.IsOpen())
+	trackFile=new TFile(filePath, "READ");
+	if(trackFile->IsZombie() || !trackFile->IsOpen())
 	{
 		cout << "Error opening track file: " << filePath << endl;
 		return false;
 	}
-	trackTree = (TTree*) trackFile.Get("trackTree");
+	trackTree = (TTree*) trackFile->Get("trackTree");
 	trackTree->SetBranchAddress("trackID", &trackID);
 	trackTree->SetBranchAddress("lastTrack", &lastTrack);
 	trackTree->SetBranchAddress("time", &currentState.time);
@@ -200,6 +210,7 @@ void SRKMotionTracker::makeTracks(int numTracksToAdd, TString inpTrackFilePath)
 	{
 		openTrackFile(inpTrackFilePath);
 	}
+	makeCylinderGeometry();
 	makeTracks(numTracksToAdd);
 
 	if(useDynamicLoading)
@@ -305,6 +316,7 @@ void SRKMotionTracker::getInitialState(SRKMotionState& stateOut)
 	if(!manualTracking)
 	{
 		getRandomVelocityVectorAndPosition(stateOut);
+		stateOut.time=0;
 	}
 	else
 	{
@@ -353,10 +365,10 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 
 	lastTrack = false;
 	TVector3 posRef, velRef;
-	double timeToWall = getNextReflection(stateIn,stateOut);
+	getNextReflection(stateIn,stateOut);
 
 #ifdef SRKTRACKDEBUG
-	cout << "Time till reflection: " << timeToReflection << endl;
+	cout << "Time till reflection: " << stateOut.time << endl;
 #endif
 
 	//Use Mean Free Path to calculate a time
@@ -372,7 +384,7 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 	}
 
 	//If time limit happens earlier than when the next reflection/meanfreepath has, stop it
-	if(stateIn.time + timeToWall >= timeLimit && stateIn.time + meanFreePathTime >= timeLimit)
+	if(stateIn.time + stateOut.time >= timeLimit && stateIn.time + meanFreePathTime >= timeLimit)
 	{
 
 		stateOut.pos += stateIn.vel * (timeLimit - stateIn.time);
@@ -385,7 +397,7 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 	else
 	{
 		//Check to see if mean free path collision happens earlier
-		if(meanFreePathTime < timeToWall)
+		if(meanFreePathTime < stateOut.time)
 		{
 			stateOut.time += meanFreePathTime;
 			stateOut.vel = getRandomVelocityVector(); //Either samples the velocity profile or does random direction
@@ -396,10 +408,8 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 		}
 		else
 		{
-			stateOut.time += timeToWall;
-			stateOut.vel = posRef;
-			stateOut.pos = velRef;
 			stateOut.type=SRKStepPointType::REFLECTION;
+			stateOut.time=stateIn.time+stateOut.time;
 			lastTrack = false;
 			totalReflections++;
 
@@ -407,12 +417,15 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 			{
 				stateOut.type=SRKStepPointType::DEPOLARIZED;
 				lastTrack=true;
+				totalReflections = 0;
+				totalGasCollisions =0;
 			}
 
 			if(totalReflections >= reflectionLimit)
 			{
 				lastTrack = true;
 				totalReflections = 0;
+				totalGasCollisions =0;
 			}
 		}
 	}
@@ -426,7 +439,7 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 	return lastTrack;
 }
 
-double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut)
+void SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut)
 {
 
 	double point[3] = { stateIn.pos.X(), stateIn.pos.Y(), stateIn.pos.Z() };
@@ -438,8 +451,8 @@ double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMot
 	theGeoManager.InitTrack(point, direction);
 
 #ifdef SRKTRACKDEBUG
-	cout << "Starting in: "; theGeoManager->FindNode(point[0],point[1],point[2])->Print();
-	cout << "Currently in: " << theGeoManager->GetCurrentVolume()->GetName() << endl;
+	cout << "Starting in: "; theGeoManager.FindNode(point[0],point[1],point[2])->Print();
+	cout << "Currently in: " << theGeoManager.GetCurrentVolume()->GetName() << endl;
 #endif
 	theGeoManager.FindNextBoundary(maxTrackSize);
 	double distance = theGeoManager.GetStep();
@@ -458,7 +471,18 @@ double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMot
 #ifdef SRKTRACKDEBUG
 	cout << "Time to Boundary: " << minTime << endl;
 #endif
-	if(minTime < 0) cout << "Error" << endl;
+	if(minTime < 0)
+	{
+//		cout << "Starting in: "; theGeoManager.FindNode(point[0],point[1],point[2])->Print();
+//		cout << "Currently in: " << theGeoManager.GetCurrentVolume()->GetName() << endl;
+//		cout << "Distance to boundary: " << distance << endl;
+//		cout << "Is on boundary: " << theGeoManager.IsOnBoundary() << endl;
+//		cout << "Error, minTime is less than zero" << endl;
+//		cout << theGeoManager.GetCurrentPoint()[0] << " " << theGeoManager.GetCurrentPoint()[1] << " " << theGeoManager.GetCurrentPoint()[2] << endl;
+//		cout << theGeoManager.GetCurrentDirection()[0] << " " << theGeoManager.GetCurrentDirection()[1] << " " << theGeoManager.GetCurrentDirection()[2] << endl;
+//		cin >> minTime;
+		minTime=1e-9;
+	}
 
 	point[0] = stateOut.pos.X();
 	point[1] = stateOut.pos.Y();
@@ -470,9 +494,9 @@ double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMot
 //	theGeoManager->Step(true,false);
 
 #ifdef SRKTRACKDEBUG
-	cout << "On Boundary: " << theGeoManager->IsOnBoundary() << endl;
-	cout << theGeoManager->GetCurrentPoint()[0] << " " << theGeoManager->GetCurrentPoint()[1] << " " << theGeoManager->GetCurrentPoint()[2] << endl;
-	cout << theGeoManager->GetCurrentDirection()[0] << " " << theGeoManager->GetCurrentDirection()[1] << " " << theGeoManager->GetCurrentDirection()[2] << endl;
+	cout << "On Boundary: " << theGeoManager.IsOnBoundary() << endl;
+	cout << theGeoManager.GetCurrentPoint()[0] << " " << theGeoManager.GetCurrentPoint()[1] << " " << theGeoManager.GetCurrentPoint()[2] << endl;
+	cout << theGeoManager.GetCurrentDirection()[0] << " " << theGeoManager.GetCurrentDirection()[1] << " " << theGeoManager.GetCurrentDirection()[2] << endl;
 #endif
 	const double* normArray = nullptr;
 //	theGeoManager->FindNextBoundary();
@@ -490,11 +514,10 @@ double SRKMotionTracker::getNextReflection(const SRKMotionState& stateIn, SRKMot
 
 	stateOut.vel = getReflectedVector(diffuseReflectionProb, stateIn.vel, norm);
 	stateOut.vel.SetMag(stateIn.vel.Mag());
+	stateOut.time=minTime;
 #ifdef SRKTRACKDEBUG
 	cout << "Reflected Vel: "; stateOut.vel.Print();
 #endif
-
-	return minTime;
 
 }
 
