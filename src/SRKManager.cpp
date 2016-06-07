@@ -25,8 +25,9 @@ SRKManager::SRKManager()
 {
 	resultsFile = nullptr;
 	resultsTree = nullptr;
-	useDynamicTracking=true;
-	recordAllSteps = false;
+	stepTree = nullptr;
+	useDynamicTracking = true;
+	recordPeriodicSteps = false;
 	useAltStepping = false;
 	parallelFields = true;
 	theSpinTracker.setGlobalField(&theGlobalField);
@@ -68,7 +69,7 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 	{
 		resultsFile->Close();
 	}
-	resultsFile=new TFile(resultsFilePath, "RECREATE");
+	resultsFile = new TFile(resultsFilePath, "RECREATE");
 
 	if(resultsFile->IsZombie() || !resultsFile->IsOpen())
 	{
@@ -90,6 +91,12 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 	resultsTree->Branch("phi", &phi, "phi/D");
 	resultsTree->Branch("theta", &theta, "theta/D");
 
+	stepTree = new TTree("stepTree", "Record of each step");
+	if(recordPeriodicSteps)
+	{
+		stepTree->Branch("sxProb", &sxProb, "sxProb/F");
+	}
+
 }
 
 void SRKManager::closeResultsFile()
@@ -97,7 +104,7 @@ void SRKManager::closeResultsFile()
 
 	TList* userInfoList = resultsTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
 
-	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) isRecordAllSteps())));
+	userInfoList->Add(new TNamed("RecordAllSteps", Form("%i", (int) isRecordPeriodicSteps())));
 	userInfoList->Add(new TNamed("UseAltStepping", Form("%i", (int) isUseAltStepping())));
 	userInfoList->Add(new TNamed("ParallelFields", Form("%i", (int) isParallelFields())));
 	userInfoList->Add(new TNamed("ConstStepper", Form("%i", (int) theSpinTracker.isConstStepper())));
@@ -131,6 +138,9 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
 	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
 	userInfoList->Add(new TNamed("B0FieldDirection", Form("%f %f %f", getB0FieldDirection().X(), getB0FieldDirection().Y(), getB0FieldDirection().Z())));
+
+	TList* userInfoListStepTree = stepTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
+	userInfoListStepTree->Add(new TNamed("RecordAllSteps", Form("%i", (int) theMotionTracker.getPeriodicStopTime())));
 
 	resultsFile->Write("", TObject::kOverwrite);
 
@@ -166,7 +176,13 @@ void SRKManager::writeEvent()
 	resultsTree->Fill();
 }
 
-void SRKManager::writeAllSteps(std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes)
+void SRKManager::writePeriodicStep()
+{
+	sxProb=(float) calculateSxDetectionProbability(phi,theta);
+	stepTree->Fill();
+}
+
+void SRKManager::writeAllSpinSteps(std::vector<SRKODEState>* stepRecord, std::vector<double>* stepTimes)
 {
 	for (unsigned int i = 0; i < stepRecord->size(); i++)
 	{
@@ -193,11 +209,6 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 	}
 	cout << "Using random seed: " << gRandom->GetSeed() << endl;
 	loadFields();
-	if(recordAllSteps)
-	{
-		stepRecord = new std::vector<SRKODEState>;
-		stepTimes = new std::vector<double>;
-	}
 
 	createResultsFile(resultsFilePath);
 
@@ -209,7 +220,6 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 	{
 		precessSpinsAlongTracksWithTrackFile(numTracks);
 	}
-
 
 	closeResultsFile();
 	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError); //Prints mean and stdev, no plot
@@ -248,7 +258,7 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 	SRKODEState theState(9);
 //	SRKODEState initialState(9);
 
-	SRKMotionState currentMotionState,stateOut;
+	SRKMotionState currentMotionState, stateOut;
 	for (int i = 0; i < numTracks; i++)  //Track loop
 	{
 		theMotionTracker.getInitialState(currentMotionState);
@@ -260,12 +270,12 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		theState[6] = phiStart; //Phi
 		theState[7] = thetaStart; //Theta
 		setInitialState(theState);
-		#ifdef SRKMANAGERDEBUG
-			//Initial pos/vel
-			cout << "___________________________________________________________________________________________" << endl;
-			cout << "Initial Position:"<< endl;
-			printMotionState(theState);
-		#endif
+#ifdef SRKMANAGERDEBUG
+		//Initial pos/vel
+		cout << "___________________________________________________________________________________________" << endl;
+		cout << "Initial Position:"<< endl;
+		printMotionState(theState);
+#endif
 
 		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
 
@@ -273,7 +283,7 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		do
 		{
 
-			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState,stateOut);
+			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState, stateOut);
 
 			if(useAltStepping)
 			{
@@ -284,33 +294,37 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 				theSpinTracker.trackSpin(theState, stateOut.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
 			updateMotionStatePosVel(theState, stateOut); //Use the next reflection point for next step
-			currentMotionState=stateOut;
-			#ifdef SRKMANAGERDEBUG
-				//Initial pos/vel
-				cout << "___________________________________________________________________________________________" << endl;
-				cout << "State after step:"<< endl;
-				printMotionState(theState);
-			#endif
-
+			currentMotionState = stateOut;
+#ifdef SRKMANAGERDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "State after step:"<< endl;
+			printMotionState(theState);
+#endif
 
 			if(lastTrack) //Record at last point
 			{
+				setFinalState(theState);
+#ifdef SRKMANAGERDEBUG
+				//Initial pos/vel
+				cout << "___________________________________________________________________________________________" << endl;
+				cout << "FinalState:"<< endl;
+				printMotionState(theState);
+#endif
+				writeEvent(); //Write the final state only
 
-				if(stepRecord == nullptr)
-				{
-					setFinalState(theState);
-					#ifdef SRKMANAGERDEBUG
-						//Initial pos/vel
-						cout << "___________________________________________________________________________________________" << endl;
-						cout << "FinalState:"<< endl;
-						printMotionState(theState);
-					#endif
-					writeEvent(); //Write the final state only
-				}
-				else
-				{
-					writeAllSteps(stepRecord, stepTimes);
-				}
+			}
+
+			if(recordPeriodicSteps && stateOut.type == SRKStepPointType::PERIODICSTOP) //Record at last point
+			{
+				setPeriodicStepState(theState);
+#ifdef SRKMANAGERDEBUG
+				//Initial pos/vel
+				cout << "___________________________________________________________________________________________" << endl;
+				cout << "StepState:"<< endl;
+				printMotionState(theState);
+#endif
+				writePeriodicStep(); //Write the final state only
 			}
 		} while (!lastTrack);
 	}
@@ -342,7 +356,6 @@ void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
 
 			theMotionTracker.getNextTrackTreeEntry(currentMotionState, trackID, lastTrack);
 
-
 			if(useAltStepping)
 			{
 				theSpinTracker.trackSpinAltA(theState, currentMotionState.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
@@ -352,24 +365,36 @@ void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
 				theSpinTracker.trackSpin(theState, currentMotionState.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
 			updateMotionStatePosVel(theState, currentMotionState); //Use the next reflection point for next step
+
 			if(lastTrack) //Record at last point
 			{
 
-				if(stepRecord == nullptr)
-				{
-					setFinalState(theState);
-					writeEvent(); //Write the final state only
-				}
-				else
-				{
-					writeAllSteps(stepRecord, stepTimes);
-				}
+				setFinalState(theState);
+#ifdef SRKMANAGERDEBUG
+				//Initial pos/vel
+				cout << "___________________________________________________________________________________________" << endl;
+				cout << "FinalState:"<< endl;
+				printMotionState(theState);
+#endif
+				writeEvent(); //Write the final state only
+
+			}
+
+			if(recordPeriodicSteps && currentMotionState.type == SRKStepPointType::PERIODICSTOP) //Record at last point
+			{
+				setPeriodicStepState(theState);
+#ifdef SRKMANAGERDEBUG
+				//Initial pos/vel
+				cout << "___________________________________________________________________________________________" << endl;
+				cout << "StepState:"<< endl;
+				printMotionState(theState);
+#endif
+				writePeriodicStep(); //Write the final state only
 			}
 		} while (!lastTrack);
 	}
 	theMotionTracker.closeTrackFile();
 }
-
 
 void SRKManager::setInitialState(SRKODEState& initialState)
 {
@@ -393,6 +418,17 @@ void SRKManager::setFinalState(SRKODEState& finalState)
 	phi = static_cast<double>(finalState[6]);
 	theta = static_cast<double>(finalState[7]);
 	time = static_cast<double>(finalState[8]);
+
+}
+
+void SRKManager::setPeriodicStepState(SRKODEState& stepState)
+{
+	//cout << "-----------Final------------" << endl;
+	//printMotionState(finalState);
+
+	phi = static_cast<double>(stepState[6]);
+	theta = static_cast<double>(stepState[7]);
+	time = static_cast<double>(stepState[8]);
 
 }
 
@@ -502,10 +538,10 @@ SRKRunStats SRKManager::calcResultsFileStats(TString filePath, bool useWrapping)
 		phiHist.Fill(phiVec[i]);
 		thetaHist.Fill(thetaVec[i]);
 
-		theStats.sZDetProb += calculateSzDetectionProbability(phiVec[i] - theStats.phiMean, thetaVec[i]);
+		theStats.sXDetProb += calculateSxDetectionProbability(phiVec[i] - theStats.phiMean, thetaVec[i]);
 	}
 
-	theStats.sZDetProb /= theStats.numEvents;
+	theStats.sXDetProb /= theStats.numEvents;
 
 	theStats.phiKurtosis = phiHist.GetKurtosis(1);
 	theStats.phiKurtosisError = phiHist.GetKurtosis(11);
@@ -565,19 +601,12 @@ void SRKManager::precessSpinsAlongTracksParAndAnti(int numTracks)
 
 }
 
-double SRKManager::calculateSzDetectionProbability(double phi, double theta)
+double SRKManager::calculateSxDetectionProbability(double phi, double theta)
 {
 	double cosPhi = cos(phi);
 	double cosTheta = cos(theta);
 
 	double probOut = 0.5 * (1. + cosPhi * cosTheta); //Probability out
-
-//	//Error propogation
-//	double sinPhi = sin(phi);
-//	double sinTheta = sin(theta);
-//	double probErrPhi=phiError*sinPhi;
-//	double probErrTheta=thetaError*sinTheta;
-//	probErrorOut=0.5*probOut*sqrt(pow(probErrPhi/cosPhi,2)+pow(probErrTheta/cosTheta,2));
 
 	return probOut;
 }

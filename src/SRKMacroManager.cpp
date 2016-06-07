@@ -192,7 +192,8 @@ TVector3 SRKMacroManager::stoTVector3(const string inp)
 
 void SRKMacroManager::defineCommands()
 {
-	commandMap["setRecordAllSteps"] = [&](string inp){	theManager->setRecordAllSteps(stobool(inp));};
+	commandMap["setRecordAllSteps"] = [&](string inp){	theManager->setRecordPeriodicSteps(stobool(inp));}; //Depricated
+	commandMap["setRecordPeriodicSteps"] = [&](string inp){	theManager->setRecordPeriodicSteps(stobool(inp));};
 	commandMap["setUseAltStepping"] = [&](string inp){	theManager->setUseAltStepping(stobool(inp));};
 	commandMap["setUseDynamicTracking"] = [&](string inp){	theManager->setUseDynamicTracking(stobool(inp));};
 	commandMap["setParallelFields"] = [&](string inp){	theManager->setParallelFields(stobool(inp));};
@@ -206,6 +207,7 @@ void SRKMacroManager::defineCommands()
 	commandMap["setThetaStart"] = [&](string inp){	theManager->setThetaStart(stod(inp));};
 	commandMap["setTimeLimit"] = [&](string inp){	theManager->getSRKMotionTracker()->setTimeLimit(stod(inp));};
 	commandMap["setDiffuseReflectionProb"] = [&](string inp){	theManager->getSRKMotionTracker()->setDiffuseReflectionProb(stod(inp));};
+	commandMap["setPeriodicStopTime"] = [&](string inp){	theManager->getSRKMotionTracker()->setPeriodicStopTime(stod(inp));};
 	commandMap["setMeanVel"] = [&](string inp){	theManager->getSRKMotionTracker()->setMeanVel(stod(inp));};
 	commandMap["setDepolAtWallProb"] = [&](string inp){	theManager->getSRKMotionTracker()->setDepolAtWallProb(stod(inp));};
 	commandMap["setReflectionLimit"] = [&](string inp){	theManager->getSRKMotionTracker()->setReflectionLimit(stod(inp));};
@@ -242,5 +244,4 @@ void SRKMacroManager::defineCommands()
 	commandMap["precessSpinsAlongTracksParAndAnti"] = [&](string inp){	theManager->precessSpinsAlongTracksParAndAnti(stoi(inp));};
 	commandMap["openMacroFile"] = [&](string inp){	openMacroFile(inp);};
 	commandMap["loadParametersFromResultsFile"] = [&](string inp){	theManager->loadParametersFromResultsFile(inp);};
-
 }

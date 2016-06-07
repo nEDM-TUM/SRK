@@ -1,6 +1,9 @@
 #ifndef SRKTRACK_H_
 #define SRKTRACK_H_
 
+#include <array>
+#include <vector>
+
 #include "TFile.h"
 #include "TTree.h"
 #include "TString.h"
@@ -14,6 +17,7 @@
 
 #include "SRKMotionState.h"
 
+enum class SRKPointType { TIMELIMIT, PERIODICSTOP, WALL, GASSCATTER, COUNT};
 
 ////////////////////////////////////////////////////////////////
 /// class SRKMotionTracker
@@ -24,6 +28,7 @@
 ///////////////////////////////////////////////////////////////
 class SRKMotionTracker
 {
+
 public:
 	SRKMotionTracker();
 	virtual ~SRKMotionTracker();
@@ -49,23 +54,24 @@ public:
 
 	void getNextTrackTreeEntry(SRKMotionState& stateOut, int& trackIDOut, bool& lastTrackOut);  /// Getting data from trackTree based on currentEntry
 
-	inline double getTimeLimit(){return timeLimit;}
-	inline double getDiffuseReflectionProb(){return diffuseReflectionProb;}
-	inline double getChamberRadius(){return chamberRadius;}
-	inline double getChamberHeight(){return chamberHeight;}
-	inline double getMeanVel(){return meanVel;}
-	inline int getTrackTreeEntries(){return trackTree->GetEntries();}
-	inline int getTotalReflections(){return totalReflections;}
-	inline TVector3 getDefaultPos(){return defaultState.pos;}
-	inline TVector3 getDefaultVel(){return defaultState.vel;}
-	inline bool isManualTracking(){return manualTracking;}
-	inline int getReflectionLimit(){return reflectionLimit;}
-	inline bool isUse2D(){return use2D;}
-	inline double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
+	inline const double getTimeLimit(){return timeLimit;}
+	inline const double getDiffuseReflectionProb(){return diffuseReflectionProb;}
+	inline const double getChamberRadius(){return chamberRadius;}
+	inline const double getChamberHeight(){return chamberHeight;}
+	inline const double getMeanVel(){return meanVel;}
+	inline const int getTrackTreeEntries(){return trackTree->GetEntries();}
+	inline const int getTotalReflections(){return totalReflections;}
+	inline const TVector3 getDefaultPos(){return defaultState.pos;}
+	inline const TVector3 getDefaultVel(){return defaultState.vel;}
+	inline const bool isManualTracking(){return manualTracking;}
+	inline const int getReflectionLimit(){return reflectionLimit;}
+	inline const bool isUse2D(){return use2D;}
+	inline const double getAdditionalRandomVelZ(){return additionalRandomVelZ;}
 	inline const TString getVelProfHistPath(){return velProfHistPath;}
-	inline double getMass(){return mass;}
-	inline double getMeanFreePath(){return meanFreePath;}
-	inline double getDepolAtWallProb(){return depolAtWallProb;}
+	inline const double getMass(){return mass;}
+	inline const double getMeanFreePath(){return meanFreePath;}
+	inline const double getDepolAtWallProb(){return depolAtWallProb;}
+	inline const double getPeriodicStopTime(){return periodicStopTime;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -83,6 +89,7 @@ public:
 	inline void setMass(const double inp){mass=inp;}
 	inline void setMeanFreePath(const double inp){meanFreePath=inp;}
 	inline void setDepolAtWallProb(const double inp){depolAtWallProb=inp;}
+	inline void setPeriodicStopTime(const double inp){periodicStopTime=inp;}
 
 protected:
 
@@ -140,13 +147,16 @@ protected:
 	int trackID; /// current track id number
 	bool lastTrack; /// Whether this is the last track
 	int totalReflections; /// How many reflections with chamber walls
-	int totalGasCollisions; // /How many gas collisions
-	double maxTimePerStep; //Max time per track
+	int totalGasCollisions; /// How many gas collisions
+	double periodicStopTime; /// Max time per track
+	double nextPeriodicStop; // Last time a periodic stop was made
+//	std::array<double,(int) int(SRKPointType::COUNT> timeChecks;
+	std::vector<double> timeChecks;
 
 	//For branch addresses for trees...This is dumb, but necessary
 	TVector3* posForBranch;
 	TVector3* velForBranch;
-
+	char* typeForBranch; //Uses SRKStepPointType
 };
 
 #endif /* SRKTRACK_H_ */

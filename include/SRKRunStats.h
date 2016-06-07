@@ -12,7 +12,7 @@
 struct SRKRunStats
 {
 	int numEvents = 0;  //Number of events
-	double sZDetProb = 0.; //Cumulative probability of measuring up in the z direction
+	double sXDetProb = 0.; //Cumulative probability of measuring up in the z direction
 
 	double phiMean = 0.;  //Mean phi
 	double phiError = 0.; //Uncertainty on Phi
