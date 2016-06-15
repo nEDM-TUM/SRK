@@ -288,7 +288,12 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			{
 				//For now we'll continue to track it.  Some concern that theta can approach Pi/2 with this method
 				theODEState[6] = gRandom->Rndm() * 2. * TMath::Pi(); //Phi
-				theODEState[7] = cos(gRandom->Rndm() * 2. - 1.); //Theta
+				double cosThetaRandom=gRandom->Rndm() * 2. - 1.;
+				theODEState[7] = acos(cosThetaRandom);//Theta
+				if(cosThetaRandom < 0)
+				{
+					theODEState[7]=-theODEState[7];
+				}
 
 			}
 			else if(useAltStepping)
