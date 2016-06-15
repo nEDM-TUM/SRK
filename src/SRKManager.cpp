@@ -36,11 +36,12 @@ SRKManager::SRKManager()
 	bGradFieldStrength = 0;
 	eGradFieldStrength = 0;
 	dipoleFieldStrength = 0;
+	sxProb=0;
 	dipolePosition.SetXYZ(0, 0, 0);
 	dipoleDirection.SetXYZ(0, 0, 1);
 	e0FieldDirection.SetXYZ(0, 0, 1);
 	b0FieldDirection.SetXYZ(0, 0, 1);
-	deltaPhaseMean = deltaPhaseError = phaseMean = phaseError = phi = phi0 = theta = theta0 = time = time0 = 0.;
+	deltaPhaseMean = deltaPhaseError = phaseMean = phaseError =stdevOut= phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
 	defaultResultsDir = ""; //only when resultsFilePath is not appropriate
@@ -138,9 +139,7 @@ void SRKManager::closeResultsFile()
 	userInfoList->Add(new TNamed("DipoleDirection", Form("%f %f %f", getDipoleDirection().X(), getDipoleDirection().Y(), getDipoleDirection().Z())));
 	userInfoList->Add(new TNamed("E0FieldDirection", Form("%f %f %f", getE0FieldDirection().X(), getE0FieldDirection().Y(), getE0FieldDirection().Z())));
 	userInfoList->Add(new TNamed("B0FieldDirection", Form("%f %f %f", getB0FieldDirection().X(), getB0FieldDirection().Y(), getB0FieldDirection().Z())));
-
-	TList* userInfoListStepTree = stepTree->GetUserInfo(); //Every TTree has a list that you can add TObjects to
-	userInfoListStepTree->Add(new TNamed("RecordAllSteps", Form("%i", (int) theMotionTracker.getPeriodicStopTime())));
+	userInfoList->Add(new TNamed("PeriodicStopTime", Form("%f", theMotionTracker.getPeriodicStopTime())));
 
 	resultsFile->Write("", TObject::kOverwrite);
 
@@ -222,11 +221,12 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 	}
 
 	closeResultsFile();
-	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError); //Prints mean and stdev, no plot
+	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError,stdevOut); //Prints mean and stdev, no plot
 
 	cout << "-----------------" << endl;
 	cout << "For file: " << resultsFilePath << "    Number of particles measured: " << numTracks << endl;
 	cout << "Mean Phase: " << setprecision(15) << phaseMean << " +/- " << phaseError << endl;
+	cout << "StDeV: " << setprecision(15) << stdevOut << " +/- " << phaseError << endl;
 	cout << "-----------------" << endl;
 
 	theMotionTracker.closeTrackFile();
@@ -255,26 +255,26 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 	theMotionTracker.makeCylinderGeometry();
 	bool lastTrack = false;
 
-	SRKODEState theState(9);
+	SRKODEState theODEState(9);
 //	SRKODEState initialState(9);
 
-	SRKMotionState currentMotionState, stateOut;
+	SRKMotionState currentMotionState, motionStateOut;
 	for (int i = 0; i < numTracks; i++)  //Track loop
 	{
 		theMotionTracker.getInitialState(currentMotionState);
 
 		trackID = i;
 
-		updateMotionStatePosVel(theState, currentMotionState);
+		updateMotionStatePosVel(theODEState, currentMotionState);
 
-		theState[6] = phiStart; //Phi
-		theState[7] = thetaStart; //Theta
-		setInitialState(theState);
+		theODEState[6] = phiStart; //Phi
+		theODEState[7] = thetaStart; //Theta
+		setInitialState(theODEState);
 #ifdef SRKMANAGERDEBUG
 		//Initial pos/vel
 		cout << "___________________________________________________________________________________________" << endl;
 		cout << "Initial Position:"<< endl;
-		printMotionState(theState);
+		printMotionState(theODEState);
 #endif
 
 		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
@@ -283,46 +283,54 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		do
 		{
 
-			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState, stateOut);
-
-			if(useAltStepping)
+			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState, motionStateOut);
+			if(motionStateOut.type == SRKStepPointType::DEPOLARIZED)  //If depolarized by the next step, no need to spin track the step
 			{
-				theSpinTracker.trackSpinAltA(theState, stateOut.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+				//For now we'll continue to track it.  Some concern that theta can approach Pi/2 with this method
+				theODEState[6] = gRandom->Rndm() * 2. * TMath::Pi(); //Phi
+				theODEState[7] = cos(gRandom->Rndm() * 2. - 1.); //Theta
+
+			}
+			else if(useAltStepping)
+			{
+				theSpinTracker.trackSpinAltA(theODEState, motionStateOut.time - static_cast<double>(theODEState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
 			else
 			{
-				theSpinTracker.trackSpin(theState, stateOut.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
+				theSpinTracker.trackSpin(theODEState, motionStateOut.time - static_cast<double>(theODEState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
-			updateMotionStatePosVel(theState, stateOut); //Use the next reflection point for next step
-			currentMotionState = stateOut;
+			updateMotionStatePosVel(theODEState, motionStateOut); //Use the next reflection point for next step
+			currentMotionState = motionStateOut;
 #ifdef SRKMANAGERDEBUG
 			//Initial pos/vel
 			cout << "___________________________________________________________________________________________" << endl;
 			cout << "State after step:"<< endl;
-			printMotionState(theState);
+			printMotionState(theODEState);
 #endif
 
 			if(lastTrack) //Record at last point
 			{
-				setFinalState(theState);
+				setFinalState(theODEState);
 #ifdef SRKMANAGERDEBUG
 				//Initial pos/vel
 				cout << "___________________________________________________________________________________________" << endl;
 				cout << "FinalState:"<< endl;
-				printMotionState(theState);
+				printMotionState(theODEState);
 #endif
 				writeEvent(); //Write the final state only
 
 			}
 
-			if(recordPeriodicSteps && stateOut.type == SRKStepPointType::PERIODICSTOP) //Record at last point
+
+
+			if(recordPeriodicSteps && motionStateOut.type == SRKStepPointType::PERIODICSTOP) //Record at last point
 			{
-				setPeriodicStepState(theState);
+				setPeriodicStepState(theODEState);
 #ifdef SRKMANAGERDEBUG
 				//Initial pos/vel
 				cout << "___________________________________________________________________________________________" << endl;
 				cout << "StepState:"<< endl;
-				printMotionState(theState);
+				printMotionState(theODEState);
 #endif
 				writePeriodicStep(); //Write the final state only
 			}
@@ -475,8 +483,9 @@ void SRKManager::loadFields()
 void SRKManager::calcDeltaPhaseMean(TString inpRunID)
 {
 	double parMean, parError, antiMean, antiError;
-	parMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_P.root", "", true, parError); //Prints mean and stdev, no plot
-	antiMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_A.root", "", true, antiError); //Prints mean and stdev, no plot
+	double parSTDevOut,antiSTDevOut;
+	parMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_P.root", "", true, parError,parSTDevOut); //Prints mean and stdev, no plot
+	antiMean = makeMeanPhasePlot(defaultResultsDir + "Results_" + inpRunID + "_A.root", "", true, antiError,antiSTDevOut); //Prints mean and stdev, no plot
 	deltaPhaseMean = parMean - antiMean;
 	deltaPhaseError = sqrt(parError * parError + antiError * antiError);
 

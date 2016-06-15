@@ -252,7 +252,7 @@ TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim)
 	return outGraph;
 }
 
-double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping, double& errorOut)
+double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping, double& errorOut, double& stdevOut)
 {
 	TFile* rootFile = new TFile(filePath);
 
@@ -288,12 +288,12 @@ double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping, 
 		mean = carefulMeanVector(phiVec);
 	}
 
-	double stdev = carefullStDevVector(phiVec, true);
-	errorOut = stdev / sqrt((double) phiVec.size());
+	stdevOut = carefullStDevVector(phiVec, true);
+	errorOut = stdevOut / sqrt((double) phiVec.size());
 
 	if(imagePath != "")
 	{
-		TH1* phaseHist = new TH1D("phaseHist", "Phase Hist; Final phase (radians);Prob (counts/total counts)", 2048, mean - 3 * stdev, mean + 3 * stdev);
+		TH1* phaseHist = new TH1D("phaseHist", "Phase Hist; Final phase (radians);Prob (counts/total counts)", 2048, mean - 3 * stdevOut, mean + 3 * stdevOut);
 
 		for (int i = 0; i < numEntries; ++i)
 		{
@@ -312,9 +312,9 @@ double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping, 
 		phaseHist->Draw();
 
 		//TsallisFunc
-		TF1 f1("TsallisFunc", "[0]/pow(1+((x-[3])/[1])*((x-[3])/[1]),[2])", mean - 3 * stdev, mean + 3 * stdev);
+		TF1 f1("TsallisFunc", "[0]/pow(1+((x-[3])/[1])*((x-[3])/[1]),[2])", mean - 3 * stdevOut, mean + 3 * stdevOut);
 		f1.SetParNames("Amplitude","Sigma","Power","Mean");
-		f1.SetParameters(phaseHist->GetMaximum()*5, stdev*0.005,.76,mean);
+		f1.SetParameters(phaseHist->GetMaximum()*5, stdevOut*0.005,.76,mean);
 		f1.SetParLimits(3,mean,mean);
 
 //		TF1 f1("Gaussian", "[0]*exp(-0.5*((x-[1])/[2])*((x-[1])/[2]))", mean - 3 * stdev, mean + 3 * stdev);

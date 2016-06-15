@@ -41,8 +41,8 @@ public:
 	bool getNextTrackingPoint(const SRKMotionState& stateIn, SRKMotionState& stateOut); // Gets the next tracking point (typically point of reflection) returns true if it's the last track
 	void getNextReflection(const SRKMotionState& stateIn, SRKMotionState& stateOut); /// Return time till next reflection
 
-	TVector3 getRandomDirection();  //G/ et's a random direction
-	TVector3 getRandomPointInCylinder(); // /Get's a randomly sampled point in the a cylinder
+	TVector3 getRandomDirection();  /// Get's a random direction
+	TVector3 getRandomPointInCylinder(); /// Get's a randomly sampled point in the a cylinder
 	void getRandomVelocityVectorAndPosition(SRKMotionState& stateOut);  /// gets a random velocity vector and position
 	TVector3 getRandomVelocityVector();
 	void getInitialState(SRKMotionState& stateOut); //If manualTracking, then sets state with defaults, otherwise gets it randomly

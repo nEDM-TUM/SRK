@@ -410,21 +410,20 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 			break;
 
 		case SRKPointType::WALL:
-			stateOut.type = SRKStepPointType::REFLECTION;
+
 
 			if(gRandom->Rndm() < depolAtWallProb)
 			{
 				stateOut.type = SRKStepPointType::DEPOLARIZED;
-				stateOut.vel = stateIn.vel;
-				lastTrack = true;
-				totalReflections = 0;
-				totalGasCollisions = 0;
+				//Let's keep tracking it.  Might add this as a switch later
 			}
 			else
 			{
-				totalReflections++;
+				stateOut.type = SRKStepPointType::REFLECTION;
 			}
 
+
+			totalReflections++;
 			if(totalReflections >= reflectionLimit)
 			{
 				lastTrack = true;

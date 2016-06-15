@@ -131,7 +131,7 @@ protected:
 	TTree* resultsTree; /// Tree where results are stored
 	TTree* stepTree; /// Tree where results are stored
 
-	double phaseMean, phaseError;
+	double phaseMean, phaseError,stdevOut;
 	double deltaPhaseMean,deltaPhaseError;
 
 	SRKGlobalField theGlobalField; /// Electric and magnetic field manager

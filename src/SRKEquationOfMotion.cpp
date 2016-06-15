@@ -56,7 +56,8 @@ void SRKEquationOfMotion::SRKEqOfMNonRelLinearSpherical(const SRKODEState& x, SR
 	SRKSpinFloat cosphi = cos(phi);
 
 //	SRKSpinFloat dphi = gyromagneticRatio * (thetaPrime * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Presumes tan(theta)~=theta
-	SRKSpinFloat dphi = gyromagneticRatio * (tan(thetaPrime) * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Exact equation (though issues if theta wraps around)
+	SRKSpinFloat dphi = gyromagneticRatio * (tan(thetaPrime) * (theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Exact equation (though issues if |theta| >pi/2 wraps around)
+//	SRKSpinFloat dphi = gyromagneticRatio * ((theField[0] * cosphi + theField[1] * sinphi) - theField[2]); //Fake equation with constant
 	SRKSpinFloat dthetaPrime = gyromagneticRatio * (theField[1] * cosphi - theField[0] * sinphi);
 //	SRKSpinFloat dthetaPrime = 0;
 

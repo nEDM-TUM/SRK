@@ -27,7 +27,7 @@ TString fileNameFromFullPath(TString fullPath);
 int countTString(TString inpString, char inpChar);
 int getNonCommentLine(std::ifstream& inpFileStream, TString& outString, char delim);
 TGraphErrors* getTabSeperatedTGraphErrors(TString filePath, char delim = '\n');
-double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping,double& errorOut);
+double makeMeanPhasePlot(TString filePath, TString imagePath, bool useWrapping,double& errorOut,double& stdevOut);
 double meanVector(const std::vector<double>& theData);
 double carefulMeanVector(const std::vector<double>& theData);
 double stDevVector(const std::vector<double>& theData,const bool useBesselCorrection);
