@@ -14,8 +14,6 @@
 #include "SRKManager.h"
 #include "SRKMacroManager.h"
 
-using namespace std;
-
 int main(int argc, char* argv[])
 {
 	//Generate random numbers automatically from lowest 4 bytes of TUUUID
@@ -23,13 +21,13 @@ int main(int argc, char* argv[])
 	delete gRandom;
 	gRandom = new TRandom3(0);
 
-	cout << scientific << endl;
+	std::cout << std::scientific << std::endl;
 
 
 	//Command Line Execution
 	if(argc >2)
 	{
-		cout << "Error! SRK only accepts 0 or 1 arguments." << endl;
+		std::cout << "Error! SRK only accepts 0 or 1 arguments." << std::endl;
 		return 1;
 	}
 
