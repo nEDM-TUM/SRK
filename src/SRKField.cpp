@@ -56,7 +56,7 @@ SRKField::SRKField(SRKFieldSettings inpFS)
 	{
 		cout << "Field type not recognized!" << endl;
 	}
-	cout << defaultfloat;
+//	cout << defaultfloat;
 	cout << "Loading " << fs.getFieldTypeString() << " " << fs.getFieldClassString() << "Field with scaling value of: " << fs.scalingValue << endl;
 
 }

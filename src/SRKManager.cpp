@@ -286,8 +286,8 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState, motionStateOut);
 			if(motionStateOut.type == SRKStepPointType::DEPOLARIZED)  //If depolarized by the next step, no need to spin track the step
 			{
-				//For now we'll continue to track it.  Some concern that theta can approach Pi/2 with this method
-				theODEState[6] = gRandom->Rndm() * 2. * TMath::Pi(); //Phi
+				//We'll continue to track it after.  There might be issues with this for the equation of motion if theta gets high.  Will monitor this.
+				theODEState[6] += (gRandom->Rndm() * 2.-1.) * TMath::Pi(); //Phi
 				double cosThetaRandom=gRandom->Rndm() * 2. - 1.;
 				theODEState[7] = acos(cosThetaRandom);//Theta
 				if(cosThetaRandom < 0)

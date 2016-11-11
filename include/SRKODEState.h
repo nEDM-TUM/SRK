@@ -9,7 +9,7 @@
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-///Float128 Option
+//Float128 Option
 //#include <boost/multiprecision/float128.hpp>
 //extern "C"
 //{
@@ -18,7 +18,7 @@
 //typedef boost::multiprecision::float128 SRKSpinFloat;
 
 
-///Higher floating point option
+//Higher floating point option
 //#include <boost/multiprecision/cpp_dec_float.hpp>
 //typedef boost::multiprecision::cpp_dec_float_50 SRKSpinFloat;
 
@@ -31,7 +31,7 @@ using SRKSpinFloat=double;
 
 #include "SRKMotionState.h"
 
-using SRKODEState= std::vector<SRKSpinFloat>;  //Presumes 9 entries: X,Y,Z,Vx,Vy,Vz,spin_phi,spin_theta,time
+using SRKODEState= std::vector<SRKSpinFloat>;  ///< Presumes 9 entries: X,Y,Z,Vx,Vy,Vz,spin_phi,spin_theta,time
 
 void setMotionState(SRKODEState& outState, const TVector3* pos, const TVector3* vel, const double phi, const double theta);
 void updateMotionStatePosVel(SRKODEState& outState, const SRKMotionState& inpMotionState);

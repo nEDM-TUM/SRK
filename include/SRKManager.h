@@ -20,7 +20,7 @@ const TString SRKMACROSDIR = "/home/mjbales/work/nedm/macros/";
 ////////////////////////////////////////////////////////////////
 /// SRKManager
 ///
-/// A bit monolithic class which runs and manages the simulation
+/// Runs and manages the simulation
 ///
 /// Author: Matthew Bales
 ///////////////////////////////////////////////////////////////
