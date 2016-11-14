@@ -288,13 +288,7 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			{
 				//We'll continue to track it after.  There might be issues with this for the equation of motion if theta gets high.  Will monitor this.
 				theODEState[6] += (gRandom->Rndm() * 2.-1.) * TMath::Pi(); //Phi
-				double cosThetaRandom=gRandom->Rndm() * 2. - 1.;
-				theODEState[7] = acos(cosThetaRandom);//Theta
-				if(cosThetaRandom < 0)
-				{
-					theODEState[7]=-theODEState[7];
-				}
-
+				theODEState[7] = acos(gRandom->Rndm() * 2. - 1.)-TMath::Pi()*.5;//Theta
 			}
 			else if(useAltStepping)
 			{
