@@ -109,6 +109,7 @@ protected:
 
 	TVector3 pos0, pos, vel0, vel; /// For recording
 	double phi0, phi, theta0, theta; /// For recording
+	Bool_t isDepolarized; //For recording
 	Float_t sxProb; /// For recording
 
 	double phiStart,thetaStart;

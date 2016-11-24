@@ -91,11 +91,15 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 	resultsTree->Branch("vel", &vel);
 	resultsTree->Branch("phi", &phi, "phi/D");
 	resultsTree->Branch("theta", &theta, "theta/D");
+	resultsTree->Branch("isDepolarized", &isDepolarized,"isDepolarized/O");
 
 	stepTree = new TTree("stepTree", "Record of each step");
 	if(recordPeriodicSteps)
 	{
+		stepTree->Branch("phi", &phi, "phi/D");
+		stepTree->Branch("theta", &theta, "theta/D");
 		stepTree->Branch("sxProb", &sxProb, "sxProb/F");
+		stepTree->Branch("isDepolarized", &isDepolarized,"isDepolarized/O");
 	}
 
 }
@@ -253,7 +257,7 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 {
 	theMotionTracker.makeCylinderGeometry();
-	bool lastTrack = false;
+
 
 	SRKODEState theODEState(9);
 //	SRKODEState initialState(9);
@@ -270,6 +274,7 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		theODEState[6] = phiStart; //Phi
 		theODEState[7] = thetaStart; //Theta
 		setInitialState(theODEState);
+		isDepolarized=false;
 #ifdef SRKMANAGERDEBUG
 		//Initial pos/vel
 		cout << "___________________________________________________________________________________________" << endl;
@@ -280,17 +285,13 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 		if(i % EVENT_STDOUT_ANNOUNCE_RATE == 0) cout << "Spinning track: " << trackID << endl;
 
 		//Reflection point loop
-		do
+		bool lastTrack = false;
+		while(!lastTrack)
 		{
 
 			lastTrack = theMotionTracker.getNextTrackingPoint(currentMotionState, motionStateOut);
-			if(motionStateOut.type == SRKStepPointType::DEPOLARIZED)  //If depolarized by the next step, no need to spin track the step
-			{
-				//We'll continue to track it after.  There might be issues with this for the equation of motion if theta gets high.  Will monitor this.
-				theODEState[6] += (gRandom->Rndm() * 2.-1.) * TMath::Pi(); //Phi
-				theODEState[7] = acos(gRandom->Rndm() * 2. - 1.)-TMath::Pi()*.5;//Theta
-			}
-			else if(useAltStepping)
+
+			if(useAltStepping)
 			{
 				theSpinTracker.trackSpinAltA(theODEState, motionStateOut.time - static_cast<double>(theODEState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
@@ -298,7 +299,17 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			{
 				theSpinTracker.trackSpin(theODEState, motionStateOut.time - static_cast<double>(theODEState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
+
+			if(motionStateOut.type == SRKStepPointType::DEPOLARIZED)
+			{
+				//We'll continue to track it after.  There might be issues with this for the equation of motion if theta gets high.  Will monitor this.
+				isDepolarized=true;
+				theODEState[6] += (gRandom->Rndm() * 2.-1.) * TMath::Pi(); //Phi
+				theODEState[7] = acos(gRandom->Rndm() * 2. - 1.)-TMath::Pi()*.5;//Theta
+			}
+
 			updateMotionStatePosVel(theODEState, motionStateOut); //Use the next reflection point for next step
+
 			currentMotionState = motionStateOut;
 #ifdef SRKMANAGERDEBUG
 			//Initial pos/vel
@@ -333,8 +344,8 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 #endif
 				writePeriodicStep(); //Write the final state only
 			}
-		} while (!lastTrack);
-	}
+		}  //End reflection loop
+	} //End track loop
 }
 void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
 {
