@@ -28,6 +28,7 @@ SRKMotionTracker::SRKMotionTracker() :
 	reflectionLimit = numeric_limits<int>::max();
 	use2D = false;
 	useGravity = false;
+	wallThermalInteraction=false;
 	mass = 3.30e-025; //Hg mass kg
 	meanVel = 193; //in m/s
 	chamberRadius = 0.235;
@@ -411,7 +412,10 @@ bool SRKMotionTracker::getNextTrackingPoint(const SRKMotionState& stateIn, SRKMo
 
 		case SRKPointType::WALL:
 
-
+			if(wallThermalInteraction)
+			{
+				stateOut.vel.SetMag(getRandomVelocityVector().Mag());  //Samples velocity profile and changes magnitude only
+			}
 			if(gRandom->Rndm() < depolAtWallProb)
 			{
 				stateOut.type = SRKStepPointType::DEPOLARIZED;

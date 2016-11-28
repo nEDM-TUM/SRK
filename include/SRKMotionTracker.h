@@ -72,6 +72,7 @@ public:
 	inline const double getMeanFreePath(){return meanFreePath;}
 	inline const double getDepolAtWallProb(){return depolAtWallProb;}
 	inline const double getPeriodicStopTime(){return periodicStopTime;}
+	inline const bool getWallThermalInteraction(){return wallThermalInteraction;}
 
 	inline void setTimeLimit(double inp){timeLimit=inp;}
 	inline void setDiffuseReflectionProb(double inp){diffuseReflectionProb=inp;}
@@ -90,6 +91,7 @@ public:
 	inline void setMeanFreePath(const double inp){meanFreePath=inp;}
 	inline void setDepolAtWallProb(const double inp){depolAtWallProb=inp;}
 	inline void setPeriodicStopTime(const double inp){periodicStopTime=inp;}
+	inline void setWallThermalInteraction(const bool inp){wallThermalInteraction=inp;}
 
 protected:
 
@@ -115,6 +117,7 @@ protected:
 	double additionalRandomVelZ; /// Allows for a z velocity to be added independent from the determination of the x and y velocities
 	bool useGravity;  /// Whether gravity is enabled (currently not)
 	bool manualTracking; /// Instead of random
+	bool wallThermalInteraction; //Sets whether the wall will "reset" temperature of particle
 	double diffuseReflectionProb;  /// 0 = Specular 1=Diffuse Lambert
 	double depolAtWallProb;  /// Probability of depolarization at the wall upon reflection
 

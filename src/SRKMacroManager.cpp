@@ -244,4 +244,5 @@ void SRKMacroManager::defineCommands()
 	commandMap["precessSpinsAlongTracksParAndAnti"] = [&](string inp){	theManager->precessSpinsAlongTracksParAndAnti(stoi(inp));};
 	commandMap["openMacroFile"] = [&](string inp){	openMacroFile(inp);};
 	commandMap["loadParametersFromResultsFile"] = [&](string inp){	theManager->loadParametersFromResultsFile(inp);};
+	commandMap["setWallThermalInteraction"]=[&](string inp){	theManager->getSRKMotionTracker()->setWallThermalInteraction(stobool(inp));};
 }

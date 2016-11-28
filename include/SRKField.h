@@ -47,9 +47,9 @@ public:
 
 	double scalingValue = 0.; //[tesla][V/m][m/s2] Zero scaling value will be the signal that no field should be loaded;
 	double frequency = 0.; 		  //rad/s
-	double angleX=0;
-	double angleY=0;
-	double angleZ=0;
+	double angleX=0;         //Euler angles for rotation
+	double angleY=0;         //Euler angles for rotation
+	double angleZ=0;         //Euler angles for rotation
 	int spaceDim = 3;        //Number of spacial dimensions
 	int fieldDim = 3;        //1 = scalar, 2,3=vector field
 	FieldType fieldType = FIELD_MAGNETIC;  //What type of field (e.g. electric, magnetic)
