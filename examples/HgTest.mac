@@ -1,0 +1,45 @@
+#------------------------------------------#
+# An example which precess Hg-199 in a     #
+# cylindrical chamber                      #
+#------------------------------------------#
+#
+###########################################
+# Run and Output
+###########################################
+setRunID HgTest
+#
+###########################################
+# Geometry
+###########################################
+setUse2D 0
+setChamberHeight 0.120
+setChamberRadius 0.025
+#
+###########################################
+# Motion
+###########################################
+setMass 3.3e-25
+setTrackFilePath !dynamic
+#
+#Note setVelProfHistPath with an "!" 
+#sets temperature in a Maxwell distribution
+setVelProfHistPath !293
+#
+###########################################
+# Spin Tracking
+###########################################
+setTimeLimit 1
+setGyromagneticRatio -48457883.9927
+setEPSRel 1e-07
+setEPSAbs 1e-07
+setInitialStepSize 0.01
+#
+###########################################
+# Fields
+###########################################
+setB0FieldDirection 0 1 0
+setB0FieldStrength 1e-6
+###########################################
+# Run something
+###########################################
+trackSpins 1

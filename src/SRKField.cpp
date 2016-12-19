@@ -19,6 +19,7 @@ SRKField::SRKField(SRKFieldSettings inpFS)
 	fs = inpFS;
 //	fs.direction = TVector3(0, 0, 1);
 	fs.direction.SetMag(1.0);
+	fs.axisDirection.SetMag(1.0);
 
 	scalingFactorWUnits = fs.scalingValue;
 

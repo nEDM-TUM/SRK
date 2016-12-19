@@ -1,10 +1,10 @@
 #ifndef SRKSPINTRACKER_H_
 #define SRKSPINTRACKER_H_
 
+#include <SRKEqOfMNonRelLinSpherical.h>
+#include <SRKEqOfMHarmOscillation.h>
 #include <iostream>
 #include <vector>
-
-#include "SRKEquationOfMotion.h"
 
 #include "TString.h"
 
@@ -45,7 +45,7 @@ protected:
 	double eps_rel; //relative error per step (applies to phi only)
 	double initialStepSize; //in time
 	int stepsTaken;  //Number of steps taken
-	SRKEquationOfMotion theEquationOfMotion; //The equation of motion
+	SRKEqOfMHarmOscillation theEquationOfMotion; //The equation of motion
 
 	bool constStepper; //Whether to use the constant stepper algorithm
 

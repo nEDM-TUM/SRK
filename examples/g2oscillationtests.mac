@@ -1,0 +1,135 @@
+#------------------------------------------#
+# An example with a muon oscillating in    #
+# a homogenous magentic field              #
+#------------------------------------------#
+#
+###########################################
+# Run and Output
+###########################################
+setRunID g2oscillation_y_B0
+setRecordPeriodicSteps true
+setPeriodicStopTime 5.09e-10
+setManualTracking true
+#
+###########################################
+# Geometry
+###########################################
+setUse2D false
+setChamberHeight 1.0e10
+setChamberRadius 1.0e10
+#
+###########################################
+# Motion
+###########################################
+setMass 1.88e-28
+setTrackFilePath !dynamic
+#
+#Note setVelProfHistPath with an "!" 
+#sets temperature in a Maxwell distribution
+#setVelProfHistPath !293
+#
+#setMeanVel 299619080.538
+setDefaultPos 0 0 0.01665607997099
+#.041804006984977
+setDefaultVel 0 0 0
+###########################################
+# Spin Tracking
+###########################################
+setTimeLimit 3e-08
+setGyromagneticRatio -0.00116592091
+setEPSRel 1e-07
+setEPSAbs 1e-07
+setInitialStepSize 1e-10
+#
+###########################################
+# Fields
+###########################################
+setB0FieldDirection 0 0 1
+setB0FieldStrength -42.52309 #-29.3*1.4513
+###########################################
+# Run something
+###########################################
+trackSpins 1
+#
+### add B quad###
+setRunID g2oscillation_y_Bquad
+
+setBQuadFieldStrength -0.818378992 #-29.3*0.137*1.4513*0.9994*0.9994/7.11
+setBQuadFieldAxis 0 1 0
+setBQuadFieldDirection 1 0 0
+
+trackSpins 1
+#
+### add B sext###
+setRunID g2oscillation_y_Bquadsext
+
+setBSextFieldStrength -0.018459 #-0.63e-03*29.3
+setBSextFieldAxis 0 1 0
+setBSextFieldDirection 1 0 0
+
+trackSpins 1
+#
+###remove B quad###
+setRunID g2oscillation_y_Bsext
+
+setBQuadFieldStrength 0
+
+trackSpins 1
+#
+###change to x oscillation###
+setRunID g2oscillation_x_Bsext
+
+setDefaultPos 0.041804006984977 0 0
+setTimeLimit 1.2e-08
+
+trackSpins 1
+#
+###add B quad###
+setRunID g2oscillation_x_Bquadsext
+
+setBQuadFieldStrength -0.818378992
+
+trackSpins 1
+#
+###remove B sext###
+setRunID g2oscillation_x_Bquad
+
+setBSextFieldStrength 0
+
+trackSpins 1
+#
+###set only B0###
+setRunID g2oscillation_x_B0
+
+setBQuadFieldStrength 0
+
+trackSpins 1
+#
+###both oscillations###
+setRunID g2oscillation_xy_B0
+
+setDefaultPos 0.041804006984977 0 0.01665607997099
+setTimeLimit 3e-08
+
+trackSpins 1
+#
+###add B quad###
+setRunID g2oscillation_xy_Bquad
+
+setBQuadFieldStrength -0.818378992
+
+trackSpins 1
+#
+###add B sext###
+setRunID g2oscillation_xy_Bquadsext
+
+setBSextFieldStrength -0.018459
+
+trackSpins 1
+#
+###remove B quad###
+setRunID g2oscillation_xy_Bsext
+
+setBQuadFieldStrength 0
+
+trackSpins 1

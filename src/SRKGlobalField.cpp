@@ -7,6 +7,8 @@
 #include "SRKDipoleField.h"
 #include "SRKUniformField.h"
 #include "SRKGradientField.h"
+#include "SRKQuadrupoleField.h"
+#include "SRKSextupoleField.h"
 
 using namespace std;
 
@@ -35,6 +37,7 @@ void SRKGlobalField::addField(SRKField* f)
 	theFields.push_back(f);
 }
 
+///template <class floatlike1, class floatlike2>
 void SRKGlobalField::getFieldValue(const double* point, double* outField) const
 {
 	for (unsigned int i = 0; i < 9; ++i)
@@ -103,6 +106,14 @@ void SRKGlobalField::constructFields()
 			else if(fieldSettingsToLoad[i].fieldClass == FIELDCLASS_GRADIENT)
 			{
 				addField(new SRKGradientField(fieldSettingsToLoad[i]));
+			}
+			else if (fieldSettingsToLoad[i].fieldClass == FIELDCLASS_QUADRUPOLE)
+			{
+				addField(new SRKQuadrupoleField(fieldSettingsToLoad[i]));
+			}
+			else if(fieldSettingsToLoad[i].fieldClass == FIELDCLASS_SEXTUPOLE)
+			{
+				addField(new SRKSextupoleField(fieldSettingsToLoad[i]));
 			}
 		}
 

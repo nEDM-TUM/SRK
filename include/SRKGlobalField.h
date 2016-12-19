@@ -35,6 +35,8 @@ public:
 	/// GetFieldValue() returns the field value at a given point[].
 	/// field is really field[6]: Bx,By,Bz,Ex,Ey,Ez,Gx,Gy,Gz
 	/// point[] is in global coordinates: x,y,z,t.
+///	template <class floatlike1, class floatlike2>
+///	void getFieldValue(const floatlike1* point, floatlike2* outField) const;
 	void getFieldValue(const double* point, double* outField) const;
 
 	/// addField() adds the SRKField object for a single
@@ -59,6 +61,7 @@ public:
     inline void setFieldExtents(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].extents=inp;}
     inline void setFieldCenterPos(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].centerPos=inp;}
     inline void setFieldDirection(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].direction=inp;}
+    inline void setFieldAxis(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].axisDirection=inp;}
     inline void setFieldMoment(TVector3 inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].moment=inp;}
     inline void setFieldScalingValue(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].scalingValue=inp;}
     inline void setFieldFrequency(double inp){if(currentFieldSettingsToModify >= 0) fieldSettingsToLoad[currentFieldSettingsToModify].frequency=inp;}

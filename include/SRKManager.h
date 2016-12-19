@@ -6,6 +6,9 @@
 #include "SRKGlobalField.h"
 #include "SRKMotionTracker.h"
 #include "SRKRunStats.h"
+#include "SRKODEState.h"
+
+#include <string>
 
 #include "TString.h"
 #include "TGraphErrors.h"
@@ -73,6 +76,14 @@ public:
 	inline void setRandomSeed(const int inp){ randomSeed=inp;} /// If set to non zero, same seed will be used every simulation run until set again
 	inline void setB0FieldStrength(double inp){b0FieldStrength=inp;}
 	inline void setE0FieldStrength(double inp){e0FieldStrength=inp;}
+	inline void setBQuadFieldStrength(double inp){bQuadFieldStrength=inp;}
+	inline void setEQuadFieldStrength(double inp){eQuadFieldStrength=inp;}
+	inline void setBQuadFieldDirection(const std::string tag, TVector3 inp){if(tag=="axis") bQuadAxisDirection=inp; else if(tag=="direction") bQuadDirection=inp;}
+	inline void setEQuadFieldDirection(const std::string tag, TVector3 inp){if(tag=="axis") eQuadAxisDirection=inp; else if(tag=="direction") eQuadDirection=inp;}
+	inline void setBSextFieldStrength(double inp){bSextFieldStrength=inp;}
+	inline void setESextFieldStrength(double inp){eSextFieldStrength=inp;}
+	inline void setBSextFieldDirection(const std::string tag, TVector3 inp){if(tag=="axis") bSextAxisDirection=inp; else if(tag=="direction") bSextDirection=inp;}
+	inline void setESextFieldDirection(const std::string tag, TVector3 inp){if(tag=="axis") eSextAxisDirection=inp; else if(tag=="direction") eSextDirection=inp;}
 	inline void setPhiStart(const double inp){phiStart=inp;}
 	inline void setThetaStart(const double inp){thetaStart=inp;}
 	inline void setBGradFieldStrength(double inp){bGradFieldStrength=inp;}
@@ -131,7 +142,7 @@ protected:
 	TTree* resultsTree; /// Tree where results are stored
 	TTree* stepTree; /// Tree where results are stored
 
-	double phaseMean, phaseError,stdevOut;
+	double phaseMean, phaseError,stdevOut, thetaMean;
 	double deltaPhaseMean,deltaPhaseError;
 
 	SRKGlobalField theGlobalField; /// Electric and magnetic field manager
@@ -145,11 +156,24 @@ protected:
 	TVector3 e0FieldDirection; /// direction for e0Field
 	double bGradFieldStrength; /// Strength of magnetic gradient field (z direction only for now)
 	double eGradFieldStrength; /// Strength of electric gradient field (z direction only for now)
+	double bQuadFieldStrength; //Strength of magnetic quadrupole field
+	double eQuadFieldStrength; //Strength of electric quadrupole field
+	TVector3 bQuadAxisDirection; //Direction of axis of radial symmetric magnetic quadrupole field
+	TVector3 eQuadAxisDirection; //Direction of axis of radial symmetric electric quadrupole field
+	TVector3 bQuadDirection; //Primary direction of magnetic quadrupole field
+	TVector3 eQuadDirection; //Primary direction of electric quadrupole field
+	double bSextFieldStrength; //Strength of magnetic sextupole field
+	double eSextFieldStrength; //Strength of electric sextupole field
+	TVector3 bSextAxisDirection; //Direction of axis of radial symmetric magnetic sextupole field
+	TVector3 eSextAxisDirection; //Direction of axis of radial symmetric electric sextupole field
+	TVector3 bSextDirection; //Primary direction of magnetic sextupole field
+	TVector3 eSextDirection; //Primary direction of electric sextupole field
 	double dipoleFieldStrength; /// Strength of magnetic dipole
 	TVector3 dipolePosition; /// position of magnetic dipole
 	TVector3 dipoleDirection; /// Direction of magnetic dipole
 
 	std::vector<SRKODEState>* stepRecord = nullptr; /// Used for recording all steps in the spin tracker (not used atm)
+//	SRKODEState stepRecord;
 	std::vector<double>* stepTimes = nullptr; /// Used for recording all steps in the spin tracker (not used atm)
 
 };

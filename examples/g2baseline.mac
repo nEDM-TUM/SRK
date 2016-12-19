@@ -1,0 +1,51 @@
+#------------------------------------------#
+# An example with a muon oscillating in    #
+# a homogenous magentic field              #
+#------------------------------------------#
+#
+###########################################
+# Run and Output
+###########################################
+setRunID g2baseline
+setRecordPeriodicSteps true
+setPeriodicStopTime 5.09e-10
+setManualTracking true
+#
+###########################################
+# Geometry
+###########################################
+setUse2D false
+setChamberHeight 1.0e10
+setChamberRadius 1.0e10
+#
+###########################################
+# Motion
+###########################################
+setMass 1.88e-28
+setTrackFilePath !dynamic
+#
+#Note setVelProfHistPath with an "!" 
+#sets temperature in a Maxwell distribution
+#setVelProfHistPath !293
+#
+#setMeanVel 299619080.538
+setDefaultPos 0 0 0
+setDefaultVel 0 0 0
+###########################################
+# Spin Tracking
+###########################################
+setTimeLimit 5.08532423208191e-07
+setGyromagneticRatio -0.00116592091
+setEPSRel 1e-07
+setEPSAbs 1e-07
+setInitialStepSize 1e-10
+#
+###########################################
+# Fields
+###########################################
+setB0FieldDirection 0 0 1
+setB0FieldStrength -42.52309 #-29.3*1.4513
+###########################################
+# Run something
+###########################################
+trackSpins 1

@@ -16,6 +16,7 @@
 #include "SRKMotionState.h"
 
 //#define SRKMANAGERDEBUG 1
+//#define SRKMANAGERMOTIONDEBUG 1
 
 using namespace std;
 
@@ -35,13 +36,21 @@ SRKManager::SRKManager()
 	e0FieldStrength = 0;
 	bGradFieldStrength = 0;
 	eGradFieldStrength = 0;
+	bQuadFieldStrength = 0;
+	eQuadFieldStrength = 0;
+	bSextFieldStrength = 0;
+	eSextFieldStrength = 0;
+	bSextAxisDirection.SetXYZ(0, 1, 0);
+	eSextAxisDirection.SetXYZ(0, 1, 0);
+	bSextDirection.SetXYZ(1, 0, 0);
+	eSextDirection.SetXYZ(1, 0, 0);
 	dipoleFieldStrength = 0;
 	sxProb=0;
 	dipolePosition.SetXYZ(0, 0, 0);
 	dipoleDirection.SetXYZ(0, 0, 1);
 	e0FieldDirection.SetXYZ(0, 0, 1);
 	b0FieldDirection.SetXYZ(0, 0, 1);
-	deltaPhaseMean = deltaPhaseError = phaseMean = phaseError =stdevOut= phi = phi0 = theta = theta0 = time = time0 = 0.;
+	deltaPhaseMean = deltaPhaseError = phaseMean = phaseError =stdevOut= thetaMean = phi = phi0 = theta = theta0 = time = time0 = 0.;
 	trackID = 0;
 	trackFilePath = "!dynamic";
 	defaultResultsDir = ""; //only when resultsFilePath is not appropriate
@@ -96,6 +105,10 @@ void SRKManager::createResultsFile(TString resultsFilePath)
 	if(recordPeriodicSteps)
 	{
 		stepTree->Branch("sxProb", &sxProb, "sxProb/F");
+		stepTree->Branch("pos", &pos);
+		stepTree->Branch("vel", &vel);
+		stepTree->Branch("phi", &phi, "phi/D");
+		stepTree->Branch("theta", &theta, "theta/D");
 	}
 
 }
@@ -222,11 +235,13 @@ bool SRKManager::precessSpinsAlongTracks(int numTracks)
 
 	closeResultsFile();
 	phaseMean = makeMeanPhasePlot(resultsFilePath, "", true, phaseError,stdevOut); //Prints mean and stdev, no plot
+	thetaMean = theta; //for now, only one particle so mean = theta
 
 	cout << "-----------------" << endl;
 	cout << "For file: " << resultsFilePath << "    Number of particles measured: " << numTracks << endl;
 	cout << "Mean Phase: " << setprecision(15) << phaseMean << " +/- " << phaseError << endl;
 	cout << "StDeV: " << setprecision(15) << stdevOut << " +/- " << phaseError << endl;
+	cout << "Mean Theta: " << setprecision(15) << thetaMean << endl;
 	cout << "-----------------" << endl;
 
 	theMotionTracker.closeTrackFile();
@@ -259,13 +274,37 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 //	SRKODEState initialState(9);
 
 	SRKMotionState currentMotionState, motionStateOut;
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 	for (int i = 0; i < numTracks; i++)  //Track loop
 	{
 		theMotionTracker.getInitialState(currentMotionState);
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 
 		trackID = i;
 
 		updateMotionStatePosVel(theODEState, currentMotionState);
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 
 		theODEState[6] = phiStart; //Phi
 		theODEState[7] = thetaStart; //Theta
@@ -304,8 +343,24 @@ void SRKManager::precessSpinsAlongTracksDynamic(int numTracks)
 			{
 				theSpinTracker.trackSpin(theODEState, motionStateOut.time - static_cast<double>(theODEState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
-			updateMotionStatePosVel(theODEState, motionStateOut); //Use the next reflection point for next step
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
+//			updateMotionStatePosVel(theODEState, motionStateOut); //Use the next reflection point for next step
 			currentMotionState = motionStateOut;
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 #ifdef SRKMANAGERDEBUG
 			//Initial pos/vel
 			cout << "___________________________________________________________________________________________" << endl;
@@ -351,11 +406,27 @@ void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
 	SRKODEState initialState(9);
 
 	SRKMotionState currentMotionState;
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 	for (int i = 0; i < numTracks; i++)  //Track loop
 	{
 		theMotionTracker.getNextTrackTreeEntry(currentMotionState, trackID, lastTrack);
 
 		updateMotionStatePosVel(theState, currentMotionState);
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 
 		theState[6] = phiStart; //Phi
 		theState[7] = thetaStart; //Theta
@@ -377,7 +448,15 @@ void SRKManager::precessSpinsAlongTracksWithTrackFile(int numTracks)
 			{
 				theSpinTracker.trackSpin(theState, currentMotionState.time - static_cast<double>(theState[8]), stepRecord, stepTimes); //Runge Kutta on Phi and Theta up to currentTime
 			}
-			updateMotionStatePosVel(theState, currentMotionState); //Use the next reflection point for next step
+//			updateMotionStatePosVel(theState, currentMotionState); //Use the next reflection point for next step
+#ifdef SRKMANAGERMOTIONDEBUG
+			//Initial pos/vel
+			cout << "___________________________________________________________________________________________" << endl;
+			cout << "currentMotionState pos:"<< endl;
+			currentMotionState.pos.Print();
+			cout << "currentMotionState vel:"<< endl;
+			currentMotionState.vel.Print();
+#endif
 
 			if(lastTrack) //Record at last point
 			{
@@ -439,6 +518,8 @@ void SRKManager::setPeriodicStepState(SRKODEState& stepState)
 	//cout << "-----------Final------------" << endl;
 	//printMotionState(finalState);
 
+	pos.SetXYZ(static_cast<double>(stepState[0]), static_cast<double>(stepState[1]), static_cast<double>(stepState[2]));
+	vel.SetXYZ(static_cast<double>(stepState[3]), static_cast<double>(stepState[4]), static_cast<double>(stepState[5]));
 	phi = static_cast<double>(stepState[6]);
 	theta = static_cast<double>(stepState[7]);
 	time = static_cast<double>(stepState[8]);
@@ -480,6 +561,34 @@ void SRKManager::loadFields()
 	theGlobalField.setFieldClass(FIELDCLASS_GRADIENT);
 	theGlobalField.setFieldScalingValue(eGradFieldStrength);
 	theGlobalField.setFieldDirection(TVector3(0, 0, 1));
+
+	theGlobalField.setCurrentFieldSettingsToModify(5); //B Quadrupole Field
+	theGlobalField.setFieldType(FIELD_MAGNETIC);
+	theGlobalField.setFieldClass(FIELDCLASS_QUADRUPOLE);
+	theGlobalField.setFieldScalingValue(bQuadFieldStrength);
+	theGlobalField.setFieldDirection(bQuadDirection);
+	theGlobalField.setFieldAxis(bQuadAxisDirection);
+
+	theGlobalField.setCurrentFieldSettingsToModify(6); //E Quadrupole Field
+	theGlobalField.setFieldType(FIELD_ELECTRIC);
+	theGlobalField.setFieldClass(FIELDCLASS_QUADRUPOLE);
+	theGlobalField.setFieldScalingValue(eQuadFieldStrength);
+	theGlobalField.setFieldDirection(eQuadDirection);
+	theGlobalField.setFieldAxis(eQuadAxisDirection);
+
+	theGlobalField.setCurrentFieldSettingsToModify(7); //B Sextupole Field
+	theGlobalField.setFieldType(FIELD_MAGNETIC);
+	theGlobalField.setFieldClass(FIELDCLASS_SEXTUPOLE);
+	theGlobalField.setFieldScalingValue(bSextFieldStrength);
+	theGlobalField.setFieldDirection(bSextDirection);
+	theGlobalField.setFieldAxis(bSextAxisDirection);
+
+	theGlobalField.setCurrentFieldSettingsToModify(8); //E Sextupole Field
+	theGlobalField.setFieldType(FIELD_ELECTRIC);
+	theGlobalField.setFieldClass(FIELDCLASS_SEXTUPOLE);
+	theGlobalField.setFieldScalingValue(eSextFieldStrength);
+	theGlobalField.setFieldDirection(eSextDirection);
+	theGlobalField.setFieldAxis(eSextAxisDirection);
 
 	theGlobalField.updateField();
 

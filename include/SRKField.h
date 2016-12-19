@@ -8,7 +8,7 @@
 const static double inv_c_light = 1. / 2.99792458e+8;
 
 enum FieldType{FIELD_MAGNETIC,FIELD_ELECTRIC,FIELD_GRAVITY};
-enum FieldClass{FIELDCLASS_UNIFORM,FIELDCLASS_GRADIENT,FIELDCLASS_DIPOLE,FIELDCLASS_OSCILLATING,FIELDCLASS_INTERPOLATION};
+enum FieldClass{FIELDCLASS_UNIFORM,FIELDCLASS_GRADIENT,FIELDCLASS_DIPOLE,FIELDCLASS_OSCILLATING,FIELDCLASS_INTERPOLATION,FIELDCLASS_QUADRUPOLE,FIELDCLASS_SEXTUPOLE};
 
 ////////////////////////////////////////////////////////////////
 /// SRKFieldSettings
@@ -34,6 +34,8 @@ public:
 		if(fieldClass == FIELDCLASS_DIPOLE) out = "Dipole";
 		if(fieldClass == FIELDCLASS_OSCILLATING) out = "Oscillating";
 		if(fieldClass == FIELDCLASS_INTERPOLATION) out = "Interpolation";
+		if(fieldClass == FIELDCLASS_QUADRUPOLE) out = "Quadrupole";
+		if(fieldClass == FIELDCLASS_SEXTUPOLE) out = "Sextupole";
 		return out;
 	}
 	std::string fieldFilePath; //Path for field file (e.g. for interpolated)
@@ -43,6 +45,7 @@ public:
 	TVector3 extents = TVector3(100., 100., 100.);    //Extents of the field in both directions from the center position (later to be changed)
 	TVector3 offset;     //Offset of local unit system
 	TVector3 direction;  //Direction of field (changed to unit vector)
+	TVector3 axisDirection; //Direction of axis for radial-symmetric fields, e.g. sextupole
 	TVector3 moment;	  //
 
 	double scalingValue = 0.; //[tesla][V/m][m/s2] Zero scaling value will be the signal that no field should be loaded;
@@ -77,7 +80,8 @@ public:
 
 	//All SRKFields must implement addFieldValue
 	virtual void addFieldValue(const double globalPoint[4], double fieldArray[9])=0; ///Field is an a
-	inline void getFieldValue(const double globalPoint[4], double fieldArray[9])
+	template <class floatlike1, class floatlike2>
+	inline void getFieldValue(const floatlike1 globalPoint[4], floatlike2 fieldArray[9])
 	{
 		fieldArray[0] = fieldArray[1] = fieldArray[2] = fieldArray[3] = fieldArray[4] = fieldArray[5] = fieldArray[6] = fieldArray[7] = fieldArray[8] = 0.;
 		addFieldValue(globalPoint, fieldArray);

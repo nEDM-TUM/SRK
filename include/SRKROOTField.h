@@ -28,6 +28,8 @@
 #include "TFile.h"
 #include "TSystem.h"
 
+#include "SRKODEState.h"
+
 class SRKROOTField
 {
 

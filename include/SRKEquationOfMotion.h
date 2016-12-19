@@ -12,7 +12,7 @@
 /// what state of the particle at a point in time.
 /// This includes related helper functions
 ///
-/// Author: Matthew Bales
+/// Author: Matthew Bales, Eva Krägeloh (changes)
 ///////////////////////////////////////////////////////////////
 
 class SRKEquationOfMotion
@@ -21,7 +21,7 @@ public:
 	SRKEquationOfMotion();
 	SRKEquationOfMotion(SRKGlobalField* inpGlobalField);
 	virtual ~SRKEquationOfMotion(){}
-	virtual void operator()(const SRKODEState& x, SRKODEState& dxdt, const SRKSpinFloat /* t */); //THE equation of motion for use with BOOST odeint
+	void operator()(const SRKODEState& x, SRKODEState& dxdt, const SRKSpinFloat /* t */); //THE equation of motion for use with BOOST odeint
 
 
 	inline void setGlobalField(SRKGlobalField* inp){theGlobalField=inp;}
@@ -29,7 +29,7 @@ public:
 	inline double getGyromagneticRatio(){ return static_cast<double> (gyromagneticRatio); }
 
 protected:
-	void SRKEqOfMNonRelLinearSpherical(const SRKODEState& x, SRKODEState& dxdt, const SRKSpinFloat /* t */);
+	virtual void SRKEqOfMotion(const SRKODEState& x, SRKODEState& dxdt, const SRKSpinFloat /* t */) = 0;
 	SRKGlobalField* theGlobalField;
 
 	//For retrieval of field
